@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#313e48">
+    <meta name="description" content="Explore campus and hybrid programs at UEI College.">
+    <title>Back2Learn | UEI College</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/site.css">
+    <script type="module" src="/js/form.mjs"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Back2Learn, UEI College">
+        <span class="back2learn-name">Back2Learn</span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="school-name">UEI College</span>
+      </a>
+      <span class="preview-label">Local preview</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">A next step starts here</p>
+          <h1>Explore what’s possible at UEI College.</h1>
+          <p class="intro">Tell us a little about what you’re looking for. Explore campus-based and hybrid program options when availability is confirmed for your area.</p>
+          <ul class="assurances" aria-label="About this page">
+            <li>Campus and hybrid learning</li>
+            <li>Your choices, at your pace</li>
+            <li>No request is sent in this preview</li>
+          </ul>
+        </div>
+
+        <section class="form-card" aria-labelledby="form-title">
+          <div class="form-heading">
+            <p class="eyebrow">Get started</p>
+            <h2 id="form-title">Explore program options</h2>
+            <p id="step-status" class="step-status" aria-live="polite">Step 1 of 2</p>
+          </div>
+
+          <div class="preview-notice" role="status">
+            Local preview only. Confirmed campus/program availability and LeadHoop posting settings are not configured. Submissions are disabled.
+          </div>
+
+          <form id="inquiry-form" novalidate>
+            <section data-step-panel="1" aria-labelledby="choice-heading">
+              <h3 id="choice-heading">Choose a campus and program</h3>
+              <p id="no-options" class="empty-options" role="status">No eligible campus or program options are available in this preview.</p>
+              <div class="field">
+                <label for="campus">Campus</label>
+                <select id="campus" name="campusId" aria-describedby="campus-help campusId-error" required>
+                  <option value="">Loading campuses…</option>
+                </select>
+                <p id="campus-help" class="help-text">Options will appear when the verified UEI campus/program matrix is supplied.</p>
+                <p id="campusId-error" class="field-error" aria-live="polite"></p>
+              </div>
+              <div class="field">
+                <label for="program">Program</label>
+                <select id="program" name="programId" aria-describedby="programId-error" disabled required>
+                  <option value="">Select a campus first</option>
+                </select>
+                <p id="programId-error" class="field-error" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <section data-step-panel="2" aria-labelledby="contact-heading" hidden>
+              <h3 id="contact-heading">How can we reach you?</h3>
+              <div class="field-row">
+                <div class="field">
+                  <label for="first-name">First name</label>
+                  <input id="first-name" name="firstName" autocomplete="given-name" maxlength="100" aria-describedby="firstName-error" required>
+                  <p id="firstName-error" class="field-error" aria-live="polite"></p>
+                </div>
+                <div class="field">
+                  <label for="last-name">Last name</label>
+                  <input id="last-name" name="lastName" autocomplete="family-name" maxlength="100" aria-describedby="lastName-error" required>
+                  <p id="lastName-error" class="field-error" aria-live="polite"></p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="email">Email address</label>
+                <input id="email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="email-error" required>
+                <p id="email-error" class="field-error" aria-live="polite"></p>
+              </div>
+              <div class="field">
+                <label for="phone">Phone number</label>
+                <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="phone-hint phone-error" required>
+                <p id="phone-hint" class="help-text">Enter a 10-digit US number.</p>
+                <p id="phone-error" class="field-error" aria-live="polite"></p>
+              </div>
+              <fieldset class="consent">
+                <legend>Contact permission</legend>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="consent" aria-describedby="consent-error" required>
+                  <span>
+                    By clicking the button and submitting this form, I agree to UEI College and United Education Institute’s
+                    <a href="https://www.uei.edu/privacy-policy-terms/" target="_blank" rel="noopener noreferrer">Privacy Policy and Terms, located at: https://www.uei.edu/privacy-policy-terms/</a>.
+                    I also authorize and agree that a representative of UEI College and/or United Education Institute may contact me via email,
+                    telephone, text (Message &amp; data rates may apply. Messages are recurring.), via automatic telephone dialing system
+                    and/or artificial or prerecorded voice, for any purpose at the number and email I provided above. I understand I do not
+                    need to provide such consent to receive any good or service and that I may opt out at any time.
+                  </span>
+                </label>
+                <p id="consent-error" class="field-error" aria-live="polite"></p>
+              </fieldset>
+              <p class="privacy-note">Your consent is optional and is not required to receive any good or service. This local preview does not save or transmit your information.</p>
+            </section>
+
+            <div class="form-actions">
+              <button class="button button-secondary" id="back-button" type="button" hidden>Back</button>
+              <button class="button button-primary" id="continue-button" type="button">Continue</button>
+              <button class="button button-primary" id="submit-button" type="submit" hidden>Submit request</button>
+            </div>
+            <p id="form-feedback" class="form-feedback" role="status" aria-live="polite"></p>
+          </form>
+          <p class="form-footnote">Program availability and details vary by campus. No inquiry is sent from this local preview.</p>
+        </section>
+      </section>
+
+      <section class="below-fold" aria-labelledby="next-step-title">
+        <div class="below-copy">
+          <p class="eyebrow">Your next step</p>
+          <h2 id="next-step-title">Campus learning with hands-on experience.</h2>
+          <p>UEI programs are taught in a hybrid learning format, with online classes and in-person, hands-on training in on-campus labs two days a week. Program availability varies by location and must be confirmed before this page can accept inquiries.</p>
+        </div>
+        <a class="text-link" href="#form-title">Explore options <span aria-hidden="true">→</span></a>
+      </section>
+
+      <section class="approved-details" aria-label="Program information and disclosures">
+        <div class="detail-card">
+          <h2>Career training</h2>
+          <p>Preparation for a career and earn a diploma in as few as 10 months.*</p>
+        </div>
+        <div class="detail-card">
+          <h2>Career placement assistance**</h2>
+          <p>Additional information is available at campus career service departments.</p>
+        </div>
+        <div class="detail-card">
+          <h2>Financial aid</h2>
+          <p>Financial aid is available for those who qualify.</p>
+        </div>
+        <p class="disclosure">All programs not available at all campus locations. *Length varies by program. **UEI does not promise or guarantee employment to any student or graduate. Some entry-level jobs may require additional background checks, drug screenings, and/or licensure requirements. Additional information is available at campus career service departments.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Back2Learn · UEI College</span>
+      <span>Preview domain only — <code>uei.back2learn.com</code> is proposed, not confirmed.</span>
+      <span>UEI College is an equal opportunity employer and program. See the <a href="https://www.uei.edu/statementofnondiscrimination">Statement of Non-Discrimination</a>. Auxiliary aids and services are available upon request to individuals with disabilities by calling 711 or 1-800-735-2922.</span>
+    </footer>
+  </body>
+</html>

@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validateAvailability, getActiveCampuses, getActivePrograms } from "../src/js/availability.mjs";
+import {
+  validateAvailability,
+  getActiveCampuses,
+  getActivePrograms,
+  isActiveProductionPair
+} from "../src/js/availability.mjs";
 import { normalizePhone } from "../src/js/phone.mjs";
 import { validateLead } from "../netlify/functions/_shared/validation.mjs";
 import { handler } from "../netlify/functions/submit-lead.mjs";
@@ -13,9 +18,10 @@ const available = {
       name: "West Campus",
       displayOrder: 1,
       active: true,
+      leadHoopId: "approved-campus-route",
       programs: [
-        { id: "program-a", name: "Program A", displayOrder: 1, active: true },
-        { id: "program-paused", name: "Paused Program", displayOrder: 2, active: false }
+        { id: "program-a", name: "Program A", displayOrder: 1, active: true, leadHoopId: "approved-program-route" },
+        { id: "program-paused", name: "Paused Program", displayOrder: 2, active: false, leadHoopId: "approved-paused-route" }
       ]
     },
     {
@@ -23,7 +29,8 @@ const available = {
       name: "Paused Campus",
       displayOrder: 2,
       active: false,
-      programs: [{ id: "program-b", name: "Program B", displayOrder: 1, active: true }]
+      leadHoopId: "approved-paused-campus-route",
+      programs: [{ id: "program-b", name: "Program B", displayOrder: 1, active: true, leadHoopId: "approved-program-b-route" }]
     }
   ]
 };
@@ -51,7 +58,14 @@ test("availability schema uses stable IDs, names, order, and active flags", () =
   assert.deepEqual(validateAvailability(available), []);
   assert.equal(getActiveCampuses(available).length, 1);
   assert.deepEqual(getActivePrograms(available, "campus-west").map((item) => item.id), ["program-a"]);
-  assert.equal(getActiveCampuses({ ...available, previewOnly: true }).length, 0);
+  assert.equal(getActiveCampuses({ ...available, previewOnly: true }).length, 1);
+  assert.equal(
+    validateAvailability({
+      ...available,
+      campuses: [{ ...available.campuses[0], id: "preview-campus-west" }]
+    }).some((error) => error.includes("Preview campus")),
+    false
+  );
 });
 
 test("server validation requires a valid active campus/program pair and consent", () => {
@@ -60,6 +74,19 @@ test("server validation requires a valid active campus/program pair and consent"
   assert.equal(validateLead({ ...validLead, programId: "program-paused" }, available).valid, false);
   assert.equal(validateLead({ ...validLead, campusId: "campus-west", programId: "program-b" }, available).valid, false);
   assert.equal(validateLead({ ...validLead, consent: false }, available).errors.consent, "Consent is required.");
+  assert.equal(isActiveProductionPair(available, "preview-campus-west", "preview-program-west"), false);
+  assert.equal(
+    validateLead({ ...validLead, campusId: "preview-campus-west", programId: "preview-program-a" }, available).valid,
+    false
+  );
+});
+
+test("production availability requires approved mappings for active options", () => {
+  const { leadHoopId, ...unmappedCampus } = available.campuses[0];
+  assert.ok(validateAvailability({
+    ...available,
+    campuses: [{ ...unmappedCampus, programs: available.campuses[0].programs }]
+  }).some((error) => error.includes("requires a confirmed LeadHoop mapping")));
 });
 
 test("preview selections and incomplete configuration cannot submit", async () => {
@@ -74,6 +101,16 @@ test("preview selections and incomplete configuration cannot submit", async () =
     body: JSON.stringify(validLead)
   });
   assert.equal(invalid.statusCode, 422);
+
+  const previewSelection = await handler({
+    httpMethod: "POST",
+    body: JSON.stringify({
+      ...validLead,
+      campusId: "preview-campus-albuquerque",
+      programId: "preview-program-albuquerque-dental-assistant"
+    })
+  });
+  assert.equal(previewSelection.statusCode, 422);
 
   const nonPost = await handler({ httpMethod: "GET" });
   assert.equal(nonPost.statusCode, 405);

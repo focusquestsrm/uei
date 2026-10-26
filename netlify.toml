@@ -7,9 +7,9 @@
   node_bundler = "esbuild"
 
 [functions."submit-lead"]
-  included_files = ["src/data/uei-campus-programs.json"]
+  included_files = ["netlify/data/uei-campus-programs.json"]
 
 [[headers]]
-  for = "/data/uei-campus-programs.json"
+  for = "/data/uei-preview-campus-programs.json"
   [headers.values]
     Cache-Control = "no-store"

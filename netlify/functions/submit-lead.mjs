@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { validateAvailability } from "../../src/js/availability.mjs";
 import { validateLead } from "./_shared/validation.mjs";
 
-const availabilityPath = fileURLToPath(new URL("../../src/data/uei-campus-programs.json", import.meta.url));
+const availabilityPath = fileURLToPath(new URL("../data/uei-campus-programs.json", import.meta.url));
 const requiredSettings = [
   "LEADHOOP_ENDPOINT",
   "LEADHOOP_AUTHORIZATION",

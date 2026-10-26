@@ -1,19 +1,7 @@
 import { normalizePhone } from "../../../src/js/phone.mjs";
+import { isActiveProductionPair } from "../../../src/js/availability.mjs";
 
 export { normalizePhone };
-
-function isActivePair(availability, campusId, programId) {
-  if (!availability || availability.previewOnly === true || !Array.isArray(availability.campuses)) {
-    return false;
-  }
-
-  const campus = availability.campuses.find((item) => item.id === campusId && item.active === true);
-  return Boolean(
-    campus &&
-      Array.isArray(campus.programs) &&
-      campus.programs.some((program) => program.id === programId && program.active === true)
-  );
-}
 
 export function validateLead(payload, availability) {
   const errors = {};
@@ -42,7 +30,11 @@ export function validateLead(payload, availability) {
   if (typeof payload.programId !== "string" || !payload.programId) {
     errors.programId = "Select an available program.";
   }
-  if (!isActivePair(availability, payload.campusId, payload.programId)) {
+  if (
+    typeof payload.campusId === "string" &&
+    typeof payload.programId === "string" &&
+    !isActiveProductionPair(availability, payload.campusId, payload.programId)
+  ) {
     errors.programId = "That campus and program combination is not currently available.";
   }
   if (payload.consent !== true) errors.consent = "Consent is required.";

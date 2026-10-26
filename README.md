@@ -1,16 +1,21 @@
-# UEI Back2Learn landing page preview
+# UEI Back2Learn campaign preview
 
-This is a standalone, local-first UEI page scaffold. **It is not launch-ready and does not submit leads.** The supplied archive includes the UEI campaign brief and the April 6, 2026 IEC Marketing Vendor Guidelines. The page uses approved general UEI copy, Open Sans, the specified UEI palette, required qualifications for program-length, financial-aid, and career-placement claims, the supplied TCPA disclosure, and the specified privacy-policy URL. The archive has no separate UEI logo image; the guideline’s Canto download link could not be opened, so the page uses text-only Back2Learn/UEI labels rather than an invented or low-quality logo. The UMA branch image directory contains a UMA logo and other campaign assets but no identifiable Back2Learn logo.
+This standalone UEI College landing page adapts the guided campaign experience of the authorized UMA Kayla reference. It is an interactive **review preview**, not a live lead form: the campus/program choices are provisional, completing the form sends no inquiry, and the server-side LeadHoop integration is disabled.
 
-## Reference verification and source-selection hold
+The page uses the supplied UEI TCPA disclosure, privacy-policy link, Open Sans, and IEC marketing palette, with program length, financial-aid, career-services, campus-availability, and employment qualifications displayed alongside relevant claims. It describes UEI's hybrid learning as online coursework combined with in-person hands-on training in campus labs; it does not describe the programs as fully online.
 
-The requested reference is [focusquestsrm/uma-landing-page](https://github.com/focusquestsrm/uma-landing-page), branch `fallon-duplicate`; its latest branch commit reported by GitHub was `2076e82b2ad13fb5874a83a396bcb0a4db250f49`. No UMA code or assets were copied. The README identifies `src/data/uma-kayla-programs.csv`, but describes the implementation as the “approved Fallon UMA experience,” a campaign-identity conflict. The live `https://uma.back2learn.com/` page does not expose a verifiable source commit, so whether production matches that branch cannot be confirmed.
+## Reference and supplied assets
 
-The branch’s `src/js/phone.js` normalizes the phone before browser submission, and `netlify/functions/_shared/submit-lead-handler.js` uses that phone helper to validate and normalize on the server. The normalization commit is the branch tip. These checks establish the requested hotfix evidence, but do not resolve the campaign identity conflict; source selection was therefore paused and no UMA code or campaign settings were adopted.
+- Authorized reference: [focusquestsrm/uma-landing-page](https://github.com/focusquestsrm/uma-landing-page), branch `fallon-duplicate`, pinned at `2076e82b2ad13fb5874a83a396bcb0a4db250f49`.
+- The reference README identifies `src/data/uma-kayla-programs.csv`; the branch's page, form flow, styles, Back2Learn footer attribution, and shared browser/server phone-normalization pattern were reviewed. Production at `https://uma.back2learn.com/` does not expose a verifiable commit, so whether it matches the pinned branch could not be confirmed.
+- Phone normalization and 10-digit US validation are performed in the browser and repeated server-side using the UEI shared helper.
+- UEI logo: `src/image/uei-college-horizontal.jpg`, the horizontal UEI College logo downloaded from the Canto asset collection linked by the supplied IEC Marketing Vendor Guidelines. The local file is JPEG despite the upstream asset's misleading `.png` filename.
+- Back2Learn attribution is text in the footer, following the reference's text attribution; no separate approved Back2Learn logo asset was found.
+- No approved UEI campus photography was found in the supplied materials or reviewed asset collection. The hero and campus artwork are abstract CSS illustration, not depictions of real campuses.
 
-## Local setup
+## Local preview
 
-Requires Node.js 18 or later. No third-party npm dependencies are required.
+Requires Node.js 18 or later. No third-party npm packages are required.
 
 ```powershell
 npm install
@@ -19,27 +24,31 @@ npm run build
 npx netlify dev
 ```
 
-Open the local URL printed by Netlify Dev. The static page can also be inspected directly, but the campus/program data endpoint is served with no-cache headers and the serverless function requires Netlify Dev for full interaction testing.
+Open the local URL printed by Netlify Dev. The form supports campus selection, campus-dependent program selection, guided contact details, phone normalization, validation, unchecked required consent, Back navigation with preserved fields, and a completion screen. Completion is only a preview; no HTTP request or conversion event is triggered.
 
-## Campus/program data and availability
+## Provisional campus/program options
 
-Edit `src/data/uei-campus-programs.json` only with the latest UEI-approved Sparkroom matrix and confirmed LeadHoop mappings. Use this shape:
+`src/data/uei-preview-campus-programs.json` contains the 22 campuses and campus/program relationships transcribed from pages 9–10 of the supplied IEC Marketing Vendor Guidelines (April 6, 2026). Each ID is prefixed `preview-campus-` or `preview-program-`. This is reference material only: the PDF says to use the latest Sparkroom matrix, so these options are explicitly provisional and must not be treated as current availability or submitted to LeadHoop.
+
+The browser loads only this preview file. `netlify/data/uei-campus-programs.json` is server-only, has no campus or program options, and is included only in the function bundle. Never copy preview IDs into the production file. Populate it only after the current Sparkroom matrix and confirmed LeadHoop campus/program mappings are supplied. Its schema is:
 
 ```json
 {
   "previewOnly": false,
   "campuses": [
     {
-      "id": "confirmed-stable-campus-id",
+      "id": "confirmed-production-campus-id",
       "name": "Confirmed campus name",
       "displayOrder": 1,
       "active": true,
+      "leadHoopId": "confirmed-campus-routing-value",
       "programs": [
         {
-          "id": "confirmed-stable-program-id",
+          "id": "confirmed-production-program-id",
           "name": "Confirmed program name",
           "displayOrder": 1,
-          "active": true
+          "active": true,
+          "leadHoopId": "confirmed-program-routing-value"
         }
       ]
     }
@@ -47,26 +56,25 @@ Edit `src/data/uei-campus-programs.json` only with the latest UEI-approved Spark
 }
 ```
 
-The identifiers above are illustrative shape only and must not be used. The checked-in file deliberately has `previewOnly: true` and an empty campus list. Do not change it to live configuration until all identifiers, names, mappings, and eligibility rules have been confirmed.
+Use only confirmed stable production IDs, names, ordering, active states, and mappings. The shared availability validator rejects preview IDs in production and requires mappings for active production options. To pause a campus or one campus/program combination, change its `active` flag to `false` in the server-only file and deploy the change; the function reads current availability for each request, so an option paused after a form was opened is rejected. Reactivate only after the authorized availability owner confirms it; there is no monthly automatic reactivation or public availability-management endpoint. Do not expose credentials or create a browser-side administrative interface.
 
-To pause a campus, set its `active` value to `false`; to pause one campus/program combination, set that program’s `active` value to `false`. Reactivate only after approval by setting the same value back to `true`. Commit and deploy the updated data with the page. The browser filters program choices by the currently selected campus; changing campus clears the selected program. The submission function reads the current server-side data on every request and rejects a paused campus, paused program, invalid pairing, or preview-only selection, including selections made before availability changed. There is no monthly automatic reactivation and no browser-exposed management endpoint or secret.
+## Submission and launch dependencies
 
-## Lead integration status
+Outbound posting is disabled in `.env.example` (`LEAD_SUBMISSION_ENABLED=false`), the checked-in production availability is empty, and the browser preview contains no posting request. The Netlify function validates consent, contact fields, normalized phone, and the current active mapped campus/program pair, and rejects preview selections. No production leads or test leads have been sent.
 
-`LEAD_SUBMISSION_ENABLED` is `false` in `.env.example`, no endpoint or credentials are present, and the function fails closed. No LeadHoop requests are made by the current implementation. Before implementation can be completed, obtain and validate:
+Before implementation or launch, obtain and verify:
 
-- The supplied brief identifies Jordan as the traffic source and LeadHoop campaign 12213. The admin URL redirects to sign-in, so obtain an authorized export of the posting specifications: endpoint, campaign/posting code, required fields, authorization method, FPI, response/redirect rules, and field-level requirements. Do not infer these values from the URL.
-- Confirmed UEI campus/program-to-LeadHoop mappings, current campus availability, and all eligibility rules. The April 2026 marketing PDF includes a campus/program list, but explicitly directs vendors to the latest Sparkroom matrix; treat that list as reference material only.
-- An approved UEI logo file from the asset library linked in the guidelines.
-- Any consent requirements for Meta Pixel, TrustedForm, or Jornaya.
-- Confirmed deduplication/idempotency behavior and accepted and rejected redirect destinations.
-- Any required address fields, address rules, attribution mappings for `fbclid`, `_fbc`, and `_fbp`, and approved demographic answers/mappings if required. No Google Maps or Places integration is present.
-- Confirmation of the production domain. `uei.back2learn.com` is only a proposal.
+1. An authorized export of the complete LeadHoop posting specifications for campaign 12213. The supplied admin URL redirects to sign-in; do not infer endpoint, posting/campaign code, authorization, FPI, required fields, response rules, or fixed routing values from its URL.
+2. The current UEI Sparkroom availability matrix and confirmed LeadHoop mappings for each campus/program pair, plus any eligibility, ZIP, distance, cap, or other acceptance rules.
+3. Confirmed field mappings for Jordan traffic attribution and `fbclid`, `_fbc`, and `_fbp`; no attribution fields are currently mapped to LeadHoop subids.
+4. Required address fields and validation, if any. There is no address autocomplete or Google Maps/Places integration.
+5. Confirmed deduplication/idempotency storage, ambiguous-response handling, and separate accepted/rejected redirect destinations.
+6. Any approved configuration for Meta Pixel, TrustedForm, Jornaya, and any conversion-event conditions. No UMA identifiers were copied and no preview, validation, rejected, or failed submission can fire a successful conversion event.
+7. Any approved demographic answers and mappings if the posting specs require them. The page does not hardcode gender or other demographic answers.
+8. Confirmation of the production domain. `uei.back2learn.com` is only a proposed domain.
 
-After specs are available, implement the confirmed LeadHoop mapping and protected request flow server-side, add a durable deduplication store, implement and test ambiguous-response handling, and keep accepted/rejected redirects separately configured. Do not enable submissions or send test/production leads until review and explicit authorization. Add Meta Pixel, TrustedForm, and Jornaya only as individually confirmed; the environment placeholders contain no identifiers and do not activate them. A successful conversion event must be added only after a confirmed accepted response.
-
-The form includes contact validation and an unchecked consent control with the approved UEI TCPA copy and privacy link. Attribution query values are retained under their original names without assigning any to LeadHoop fields. Submission remains blocked in preview and the live posting integration is intentionally not implemented.
+After the specifications are supplied, implement and test the protected server-side posting flow, durable deduplication, ambiguous-response safeguards, and accepted/rejected redirects. Keep authorization, FPI, endpoint, routing values, and other protected settings in server environment variables with nonfunctional placeholders in `.env.example`. Keep `LEAD_SUBMISSION_ENABLED=false` until configuration and end-to-end review are approved. Do not send a lead while testing without separate authorization.
 
 ## Deployment
 
-This project includes `netlify.toml` for Netlify static publishing and functions. Use a review deploy only after the missing UEI materials are added. Keep secrets in protected Netlify environment variables; never place authorization, FPI, routing values, or lead data in browser code, repository files, logs, or responses. `uei.back2learn.com` is not confirmed. This task did not deploy, push, merge, or modify DNS.
+`netlify.toml` configures the static build and serverless function. This page is not launch-ready while the posting specifications and approved availability/mappings are missing. Do not enable posting, configure DNS, or treat the proposed custom domain as confirmed.

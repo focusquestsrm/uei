@@ -10,7 +10,7 @@ The page uses the supplied UEI TCPA disclosure, privacy-policy link, Open Sans, 
 - The reference README identifies `src/data/uma-kayla-programs.csv`; the branch's page, form flow, styles, Back2Learn footer attribution, and shared browser/server phone-normalization pattern were reviewed. Production at `https://uma.back2learn.com/` does not expose a verifiable commit, so whether it matches the pinned branch could not be confirmed.
 - Phone normalization and 10-digit US validation are performed in the browser and repeated server-side using the UEI shared helper.
 - UEI logo: `src/image/uei-college-horizontal.jpg`, the horizontal UEI College logo downloaded from the Canto asset collection linked by the supplied IEC Marketing Vendor Guidelines. The local file is JPEG despite the upstream asset's misleading `.png` filename.
-- Back2Learn attribution is text in the footer, following the reference's text attribution; no separate approved Back2Learn logo asset was found.
+- Back2Learn logo: downloaded from the official Back2Learn site at `https://www.back2learn.com/wp-content/uploads/2021/05/B2L-logo.png` and used as the horizontal wordmark beside the UEI logo in the header; the footer continues to use the text attribution model from the reference review.
 - No approved UEI campus photography was found in the supplied materials or reviewed asset collection. The hero and campus artwork are abstract CSS illustration, not depictions of real campuses.
 
 ## Local preview

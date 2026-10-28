@@ -5,6 +5,13 @@ import {
 } from "./availability.mjs";
 import { collectAttribution } from "./attribution.mjs";
 import { normalizePhone } from "./phone.mjs";
+import {
+  US_STATE_ABBREVIATIONS,
+  validateCity,
+  validateState,
+  validateStreetAddress,
+  validateZipCode
+} from "./address.mjs";
 
 const form = document.querySelector("#inquiry-form");
 const campusSelect = document.querySelector("#campus");
@@ -18,6 +25,10 @@ const backButton = document.querySelector("#back-button");
 const submitButton = document.querySelector("#submit-button");
 const restartButton = document.querySelector("#restart-button");
 const phoneInput = document.querySelector("#phone");
+const streetInput = document.querySelector("#street-address");
+const cityInput = document.querySelector("#city");
+const stateSelect = document.querySelector("#state");
+const zipInput = document.querySelector("#zip");
 const noOptions = document.querySelector("#no-options");
 const availabilityNote = document.querySelector("#availability-note");
 const programCardList = document.querySelector("#program-card-list");
@@ -35,6 +46,10 @@ const fields = {
   lastName: [form.elements.namedItem("lastName"), document.querySelector("#last-name-error")],
   email: [form.elements.namedItem("email"), document.querySelector("#email-error")],
   phone: [phoneInput, document.querySelector("#phone-error")],
+  address: [streetInput, document.querySelector("#street-address-error")],
+  city: [cityInput, document.querySelector("#city-error")],
+  state: [stateSelect, document.querySelector("#state-error")],
+  zip: [zipInput, document.querySelector("#zip-error")],
   consent: [form.elements.namedItem("consent"), document.querySelector("#consent-error")]
 };
 
@@ -193,6 +208,25 @@ function validateContact() {
   if (normalizedPhone) phoneInput.value = normalizedPhone;
   valid = valid && !phoneError;
 
+  const addressError = validateStreetAddress(streetInput.value);
+  setFieldError("address", addressError);
+  if (!addressError) streetInput.value = streetInput.value.trim();
+  valid = valid && !addressError;
+
+  const cityError = validateCity(cityInput.value);
+  setFieldError("city", cityError);
+  if (!cityError) cityInput.value = cityInput.value.trim();
+  valid = valid && !cityError;
+
+  const stateError = validateState(stateSelect.value);
+  setFieldError("state", stateError);
+  valid = valid && !stateError;
+
+  const zipError = validateZipCode(zipInput.value);
+  setFieldError("zip", zipError);
+  if (!zipError) zipInput.value = zipInput.value.trim();
+  valid = valid && !zipError;
+
   const consentError = fields.consent[0].checked ? "" : "Consent is required to continue this preview.";
   setFieldError("consent", consentError);
   return valid && !consentError;
@@ -230,6 +264,14 @@ backButton.addEventListener("click", () => {
   feedback.textContent = "";
   showStep(1);
 });
+
+function populateStateOptions() {
+  if (!stateSelect) return;
+  stateSelect.replaceChildren(new Option("Select a state", ""));
+  for (const value of US_STATE_ABBREVIATIONS) {
+    stateSelect.add(new Option(value, value));
+  }
+}
 
 for (const [name, [field]] of Object.entries(fields)) {
   field.addEventListener("input", () => setFieldError(name, ""));
@@ -293,6 +335,8 @@ async function loadPreview() {
   renderProgramCards();
   void attribution;
 }
+
+populateStateOptions();
 
 try {
   await loadPreview();

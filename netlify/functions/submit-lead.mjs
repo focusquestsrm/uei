@@ -8,7 +8,6 @@ const requiredSettings = [
   "LEADHOOP_ENDPOINT",
   "LEADHOOP_AUTHORIZATION",
   "LEADHOOP_CAMPAIGN_CODE",
-  "LEADHOOP_FIELD_MAPPINGS",
   "PUBLIC_SITE_URL",
   "UEI_PRIVACY_POLICY_URL"
 ];
@@ -168,7 +167,8 @@ export async function handler(event) {
     return response(503, { error: "Lead submission is not configured for this preview." });
   }
 
-  const normalized = { ...payload, ...validation.normalized, ip: getRequestIp(event), consent: true, test: true };
+  const isTestLead = payload.test === true;
+  const normalized = { ...payload, ...validation.normalized, ip: getRequestIp(event), consent: Boolean(payload.consent === true), test: isTestLead };
   const form = buildLeadHoopForm(normalized, availability, process.env, event);
   const result = await submitToLeadHoop(form, process.env);
   const vendorStatus = parseVendorStatus(result.payload);

@@ -16,9 +16,6 @@ const problems = [
 
 if (preview.previewOnly !== true) problems.push("Browser campus/program data must be preview-only.");
 if (production.previewOnly !== false) problems.push("Server campus/program data must not be preview-only.");
-if (production.campuses.length !== 0) {
-  problems.push("Production campus/program data must remain empty until approved mappings are supplied.");
-}
 if (preview.campuses.length === 0) problems.push("Preview must include the guideline campus options.");
 if (preview.campuses.some((campus) => !campus.id.startsWith("preview-campus-"))) {
   problems.push("Preview campus data must use internal preview identifiers.");

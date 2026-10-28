@@ -34,10 +34,57 @@ const availabilityNote = document.querySelector("#availability-note");
 const programCardList = document.querySelector("#program-card-list");
 const programLoadError = document.querySelector("#program-load-error");
 const attribution = collectAttribution(window.location.search);
+const publicConfig = window.UEI_PUBLIC_CONFIG || {};
 let availability = { previewOnly: true, campuses: [] };
 let currentStep = 1;
 let preferredProgram = "";
 let completing = false;
+
+function generateVisitorToken() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `uei-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function ensureJornayaVisitorToken() {
+  const tokenField = document.querySelector("#jornaya-visitor-token");
+  const tokenValue = tokenField?.value?.trim();
+  if (tokenValue) return tokenValue;
+  const newValue = generateVisitorToken();
+  if (tokenField) tokenField.value = newValue;
+  return newValue;
+}
+
+function fireMetaLeadEvent() {
+  const pixelId = publicConfig.pixelId || "1394019919533755";
+  const fbq = window.fbq;
+  if (!pixelId || typeof fbq !== "function") return;
+  fbq("trackSingle", pixelId, "Lead");
+}
+
+function buildSubmissionPayload() {
+  const values = Object.fromEntries(new FormData(form).entries());
+  return {
+    firstName: String(values.firstName || "").trim(),
+    lastName: String(values.lastName || "").trim(),
+    email: String(values.email || "").trim(),
+    phone: String(values.phone || "").trim(),
+    campusId: campusSelect.value,
+    programId: programSelect.value,
+    consent: Boolean(values.consent),
+    test: false,
+    lead_address: {
+      address: String(values["lead_address[address]"] || "").trim(),
+      address2: String(values["lead_address[address2]"] || "").trim(),
+      city: String(values["lead_address[city]"] || "").trim(),
+      state: String(values["lead_address[state]"] || "").trim(),
+      zip: String(values["lead_address[zip]"] || "").trim()
+    },
+    jornayaVisitorToken: ensureJornayaVisitorToken(),
+    attribution
+  };
+}
 
 const fields = {
   campusId: [campusSelect, document.querySelector("#campus-error")],
@@ -285,7 +332,7 @@ phoneInput.addEventListener("blur", () => {
   if (normalized) phoneInput.value = normalized;
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (completing) return;
   feedback.textContent = "";
@@ -296,6 +343,40 @@ form.addEventListener("submit", (event) => {
   if (!validateSelection() || availability.previewOnly !== true) {
     feedback.textContent = "This review is not configured for lead submission. No inquiry was sent.";
     return;
+  }
+
+  if (publicConfig.submissionEnabled === true && typeof window !== "undefined") {
+    completing = true;
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting…";
+    try {
+      const response = await fetch("/.netlify/functions/submit-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(buildSubmissionPayload())
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.status === "accepted") {
+        fireMetaLeadEvent();
+        window.location.href = publicConfig.thankYouUrl || "/thank-you.html";
+        return;
+      }
+      if (response.ok && data.status === "business_rejected") {
+        window.location.href = publicConfig.thankYouUrl || "/thank-you.html";
+        return;
+      }
+      feedback.textContent = data.error || "The lead could not be submitted. Please try again later.";
+      submitButton.disabled = false;
+      submitButton.textContent = "Finish preview <span aria-hidden=\"true\">→</span>";
+      return;
+    } catch (error) {
+      feedback.textContent = "The submission could not be completed. Please try again later.";
+      submitButton.disabled = false;
+      submitButton.textContent = "Finish preview <span aria-hidden=\"true\">→</span>";
+      return;
+    } finally {
+      completing = false;
+    }
   }
 
   completing = true;

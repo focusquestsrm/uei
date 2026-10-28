@@ -26,37 +26,15 @@ npx netlify dev
 
 Open the local URL printed by Netlify Dev. The form supports campus selection, campus-dependent program selection, guided contact details, phone normalization, validation, unchecked required consent, Back navigation with preserved fields, and a completion screen. Completion is only a preview; no HTTP request or conversion event is triggered.
 
-## Provisional campus/program options
+## Production availability and campus/program configuration
 
-`src/data/uei-preview-campus-programs.json` contains the 22 campuses and campus/program relationships transcribed from pages 9–10 of the supplied IEC Marketing Vendor Guidelines (April 6, 2026). Each ID is prefixed `preview-campus-` or `preview-program-`. This is reference material only: the PDF says to use the latest Sparkroom matrix, so these options are explicitly provisional and must not be treated as current availability or submitted to LeadHoop.
+`src/data/uei-preview-campus-programs.json` remains the browser-side preview matrix used for the UX and testing flow. The exported LeadHoop posting specs define the live campaign availability and routing values; the server-only file `netlify/data/uei-campus-programs.json` mirrors those values while keeping the known contract conflicts paused.
 
-The browser loads only this preview file. `netlify/data/uei-campus-programs.json` is server-only, has no campus or program options, and is included only in the function bundle. Never copy preview IDs into the production file. Populate it only after the current Sparkroom matrix and confirmed LeadHoop campus/program mappings are supplied. Its schema is:
+The live matrix is read server-side for validation on every request. Use stable production IDs and `leadHoopId` values from the approved posting specs; preview IDs remain forbidden in production. The shared availability validator rejects impossible combinations and requires a confirmed mapping for every active campus/program pair.
 
-```json
-{
-  "previewOnly": false,
-  "campuses": [
-    {
-      "id": "confirmed-production-campus-id",
-      "name": "Confirmed campus name",
-      "displayOrder": 1,
-      "active": true,
-      "leadHoopId": "confirmed-campus-routing-value",
-      "programs": [
-        {
-          "id": "confirmed-production-program-id",
-          "name": "Confirmed program name",
-          "displayOrder": 1,
-          "active": true,
-          "leadHoopId": "confirmed-program-routing-value"
-        }
-      ]
-    }
-  ]
-}
-```
+The current public spec history includes a direct contradiction for two cases: the campus table shows Oceanside as active, but the October 7 change note says to pause it, and Gardena lists the campus as active while the same note pauses Automotive Technician and Medical Assistant. Those contradictory options remain set to `active: false` in the server file until the campaign owner confirms the final matrix. The function respects those pauses and rejects any attempt to select them.
 
-Use only confirmed stable production IDs, names, ordering, active states, and mappings. The shared availability validator rejects preview IDs in production and requires mappings for active production options. To pause a campus or one campus/program combination, change its `active` flag to `false` in the server-only file and deploy the change; the function reads current availability for each request, so an option paused after a form was opened is rejected. Reactivate only after the authorized availability owner confirms it; there is no monthly automatic reactivation or public availability-management endpoint. Do not expose credentials or create a browser-side administrative interface.
+To pause a campus or one campus/program combination, change its `active` flag to `false` in the server-only file and deploy the change. The function reads current availability for each request, so an option paused after a form was opened is rejected. Reactivate only after the authorized availability owner confirms it. Do not expose credentials or create a browser-side administrative interface.
 
 ## Submission and launch dependencies
 

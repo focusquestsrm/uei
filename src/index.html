@@ -10,6 +10,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/site.css">
+    <script>
+      window.UEI_PUBLIC_CONFIG = window.UEI_PUBLIC_CONFIG || {
+        submissionEnabled: false,
+        pixelId: "1394019919533755",
+        siteUrl: "https://uei-cbm.back2learn.com",
+        consentUrl: "https://www.uei.edu/privacy-policy-terms/",
+        leadhoopEndpoint: "",
+        testMode: true
+      };
+    </script>
     <script type="module" src="/js/form.mjs"></script>
   </head>
   <body>
@@ -58,6 +68,7 @@
             <div class="step-progress" aria-hidden="true"><span id="step-progress-fill"></span></div>
 
             <form id="inquiry-form" novalidate>
+              <input type="hidden" id="jornaya-visitor-token" name="jornayaVisitorToken">
               <section class="form-step is-visible" data-step-panel="1" aria-labelledby="selection-title">
                 <h3 id="selection-title">Where would you like to study?</h3>
                 <div class="field">

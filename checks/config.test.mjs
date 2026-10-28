@@ -5,7 +5,7 @@ import { validateAvailability, getActivePrograms } from "../src/js/availability.
 import { collectAttribution } from "../src/js/attribution.mjs";
 import { isSubmissionConfigured } from "../netlify/functions/submit-lead.mjs";
 
-test("guideline options are preview-only and isolated from empty production configuration", async () => {
+test("guideline options remain preview-only while production availability is mapped and paused when required", async () => {
   const preview = JSON.parse(await readFile(new URL("../src/data/uei-preview-campus-programs.json", import.meta.url), "utf8"));
   const production = JSON.parse(await readFile(new URL("../netlify/data/uei-campus-programs.json", import.meta.url), "utf8"));
   assert.equal(preview.previewOnly, true);
@@ -22,7 +22,15 @@ test("guideline options are preview-only and isolated from empty production conf
   assert.ok(!getActivePrograms(preview, albuquerque.id).some((program) => program.name === "Automotive Technician"));
   assert.ok(getActivePrograms(preview, bakersfield.id).some((program) => program.name === "Automotive Technician"));
   assert.equal(production.previewOnly, false);
-  assert.deepEqual(production.campuses, []);
+  assert.ok(Array.isArray(production.campuses) && production.campuses.length > 0);
+  const oceanside = production.campuses.find((campus) => campus.name === "Oceanside");
+  const gardena = production.campuses.find((campus) => campus.name === "Gardena");
+  assert.ok(oceanside);
+  assert.ok(gardena);
+  assert.equal(oceanside.active, false);
+  assert.equal(gardena.active, true);
+  assert.ok(gardena.programs.some((program) => program.name === "Diploma - Automotive Technician" && program.active === false));
+  assert.ok(gardena.programs.some((program) => program.name === "Diploma - Medical Assistant" && program.active === false));
   assert.deepEqual(validateAvailability(production), []);
 });
 
@@ -49,9 +57,28 @@ test("attribution values are preserved as raw fields without assigning LeadHoop 
   );
 });
 
-test("outbound posting configuration is disabled until all protected settings exist", () => {
+test("outbound posting configuration is gated by the required server settings", () => {
   assert.equal(isSubmissionConfigured({ LEAD_SUBMISSION_ENABLED: "false" }), false);
-  assert.equal(isSubmissionConfigured({ LEAD_SUBMISSION_ENABLED: "true" }), false);
+  assert.equal(
+    isSubmissionConfigured({
+      LEAD_SUBMISSION_ENABLED: "true",
+      LEADHOOP_ENDPOINT: "https://example.com",
+      LEADHOOP_AUTHORIZATION: "token",
+      LEADHOOP_CAMPAIGN_CODE: "campaign",
+      PUBLIC_SITE_URL: "https://uei-cbm.back2learn.com",
+      UEI_PRIVACY_POLICY_URL: "https://www.uei.edu/privacy-policy-terms/"
+    }),
+    true
+  );
+  assert.equal(
+    isSubmissionConfigured({
+      LEAD_SUBMISSION_ENABLED: "true",
+      LEADHOOP_ENDPOINT: "https://example.com",
+      LEADHOOP_AUTHORIZATION: "token",
+      LEADHOOP_CAMPAIGN_CODE: "campaign"
+    }),
+    false
+  );
 });
 
 test("client prevents concurrent submissions and exposes a loading state", async () => {
@@ -59,6 +86,6 @@ test("client prevents concurrent submissions and exposes a loading state", async
   assert.match(form, /if \(completing\) return;/);
   assert.match(form, /submitButton\.disabled = true/);
   assert.match(form, /submitButton\.textContent = "Finishing preview…"/);
-  assert.doesNotMatch(form, /fetch\("\/\.netlify\/functions\/submit-lead"/);
+  assert.match(form, /fetch\("\/\.netlify\/functions\/submit-lead"/);
   assert.match(form, /No inquiry was sent/);
 });

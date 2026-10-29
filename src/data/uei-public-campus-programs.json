@@ -1,0 +1,812 @@
+{
+  "previewOnly": false,
+  "campuses": [
+    {
+      "id": "albuquerque",
+      "name": "Albuquerque",
+      "displayOrder": 1,
+      "active": false,
+      "programs": [
+        {
+          "id": "albuquerque-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "albuquerque-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "albuquerque-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "bakersfield",
+      "name": "Bakersfield",
+      "displayOrder": 2,
+      "active": true,
+      "programs": [
+        {
+          "id": "bakersfield-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": true
+        },
+        {
+          "id": "bakersfield-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "bakersfield-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "bakersfield-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 4,
+          "active": true
+        },
+        {
+          "id": "bakersfield-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 5,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "chula-vista",
+      "name": "Chula Vista",
+      "displayOrder": 3,
+      "active": false,
+      "programs": [
+        {
+          "id": "chula-vista-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "chula-vista-diploma-business-office-administration",
+          "name": "Diploma - Business Office Administration",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "chula-vista-diploma-criminal-justice",
+          "name": "Diploma - Criminal Justice",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "chula-vista-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "chula-vista-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 5,
+          "active": false
+        },
+        {
+          "id": "chula-vista-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 6,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "dallas",
+      "name": "Dallas",
+      "displayOrder": 4,
+      "active": false,
+      "programs": [
+        {
+          "id": "dallas-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "dallas-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "dallas-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "fresno",
+      "name": "Fresno",
+      "displayOrder": 5,
+      "active": false,
+      "programs": [
+        {
+          "id": "fresno-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "fresno-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "fresno-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "fresno-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "fresno-diploma-pharmacy-technician",
+          "name": "Diploma - Pharmacy Technician",
+          "displayOrder": 5,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "gardena",
+      "name": "Gardena",
+      "displayOrder": 6,
+      "active": true,
+      "programs": [
+        {
+          "id": "gardena-diploma-criminal-justice",
+          "name": "Diploma - Criminal Justice",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "gardena-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "gardena-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "gardena-diploma-welding-technology",
+          "name": "Diploma - Welding Technology",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "gardena-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 5,
+          "active": false
+        },
+        {
+          "id": "gardena-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 6,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "garden-grove",
+      "name": "Garden Grove",
+      "displayOrder": 7,
+      "active": false,
+      "programs": [
+        {
+          "id": "garden-grove-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "garden-grove-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "garden-grove-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "houston",
+      "name": "Houston",
+      "displayOrder": 8,
+      "active": false,
+      "programs": [
+        {
+          "id": "houston-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "houston-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "houston-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "houston-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "huntington-park",
+      "name": "Huntington Park",
+      "displayOrder": 9,
+      "active": false,
+      "programs": [
+        {
+          "id": "huntington-park-diploma-business-office-administration",
+          "name": "Diploma - Business Office Administration",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "huntington-park-diploma-criminal-justice",
+          "name": "Diploma - Criminal Justice",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "huntington-park-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "huntington-park-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "huntington-park-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 5,
+          "active": false
+        },
+        {
+          "id": "huntington-park-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 6,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "las-vegas",
+      "name": "Las Vegas",
+      "displayOrder": 10,
+      "active": false,
+      "programs": [
+        {
+          "id": "las-vegas-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "las-vegas-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "las-vegas-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "las-vegas-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "mesa",
+      "name": "Mesa",
+      "displayOrder": 11,
+      "active": false,
+      "programs": [
+        {
+          "id": "mesa-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "mesa-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "mesa-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "mesa-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "morrow",
+      "name": "Morrow",
+      "displayOrder": 12,
+      "active": false,
+      "programs": [
+        {
+          "id": "morrow-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "morrow-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "morrow-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "morrow-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "oceanside",
+      "name": "Oceanside",
+      "displayOrder": 13,
+      "active": false,
+      "programs": [
+        {
+          "id": "oceanside-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-criminal-justice",
+          "name": "Diploma - Criminal Justice",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 5,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 6,
+          "active": false
+        },
+        {
+          "id": "oceanside-diploma-medical-office-specialist",
+          "name": "Diploma - Medical Office Specialist",
+          "displayOrder": 7,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "ontario",
+      "name": "Ontario",
+      "displayOrder": 14,
+      "active": true,
+      "programs": [
+        {
+          "id": "ontario-diploma-criminal-justice",
+          "name": "Diploma - Criminal Justice",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "ontario-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "ontario-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "ontario-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 4,
+          "active": true
+        },
+        {
+          "id": "ontario-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 5,
+          "active": true
+        },
+        {
+          "id": "ontario-diploma-medical-office-specialist",
+          "name": "Diploma - Medical Office Specialist",
+          "displayOrder": 6,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "phoenix",
+      "name": "Phoenix",
+      "displayOrder": 15,
+      "active": true,
+      "programs": [
+        {
+          "id": "phoenix-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 1,
+          "active": true
+        },
+        {
+          "id": "phoenix-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "phoenix-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "phoenix-diploma-medical-billing-insurance-coding",
+          "name": "Diploma - Medical Billing & Insurance Coding",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "reseda",
+      "name": "Reseda",
+      "displayOrder": 16,
+      "active": true,
+      "programs": [
+        {
+          "id": "reseda-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 1,
+          "active": true
+        },
+        {
+          "id": "reseda-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "reseda-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "reseda-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": true
+        },
+        {
+          "id": "reseda-diploma-medical-billing-insurance-coding",
+          "name": "Diploma - Medical Billing & Insurance Coding",
+          "displayOrder": 5,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "riverside",
+      "name": "Riverside",
+      "displayOrder": 17,
+      "active": false,
+      "programs": [
+        {
+          "id": "riverside-diploma-business-office-administration",
+          "name": "Diploma - Business Office Administration",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "riverside-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "riverside-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "riverside-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "sacramento",
+      "name": "Sacramento",
+      "displayOrder": 18,
+      "active": false,
+      "programs": [
+        {
+          "id": "sacramento-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "sacramento-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "sacramento-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "sacramento-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "stockton",
+      "name": "Stockton",
+      "displayOrder": 19,
+      "active": false,
+      "programs": [
+        {
+          "id": "stockton-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "stockton-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "stockton-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "stone-mountain",
+      "name": "Stone Mountain",
+      "displayOrder": 20,
+      "active": false,
+      "programs": [
+        {
+          "id": "stone-mountain-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "stone-mountain-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "stone-mountain-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 3,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "tacoma",
+      "name": "Tacoma",
+      "displayOrder": 21,
+      "active": true,
+      "programs": [
+        {
+          "id": "tacoma-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": true
+        },
+        {
+          "id": "tacoma-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 2,
+          "active": true
+        },
+        {
+          "id": "tacoma-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 3,
+          "active": true
+        },
+        {
+          "id": "tacoma-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 4,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "west-covina",
+      "name": "West Covina",
+      "displayOrder": 22,
+      "active": false,
+      "programs": [
+        {
+          "id": "west-covina-diploma-automotive-technician",
+          "name": "Diploma - Automotive Technician",
+          "displayOrder": 1,
+          "active": false
+        },
+        {
+          "id": "west-covina-diploma-dental-assistant",
+          "name": "Diploma - Dental Assistant",
+          "displayOrder": 2,
+          "active": false
+        },
+        {
+          "id": "west-covina-diploma-electrician-technician",
+          "name": "Diploma - Electrician Technician",
+          "displayOrder": 3,
+          "active": false
+        },
+        {
+          "id": "west-covina-diploma-heating-ventilation-and-air-conditioning",
+          "name": "Diploma - Heating, Ventilation and Air Conditioning",
+          "displayOrder": 4,
+          "active": false
+        },
+        {
+          "id": "west-covina-diploma-medical-assistant",
+          "name": "Diploma - Medical Assistant",
+          "displayOrder": 5,
+          "active": false
+        }
+      ]
+    },
+    {
+      "id": "high-school-diploma-ged",
+      "name": "High School Diploma GED",
+      "displayOrder": 23,
+      "active": true,
+      "programs": []
+    },
+    {
+      "id": "some-college-1-29-credits-some-college-30-59-credits-some-college-60-credits",
+      "name": "Some College (1-29 credits) Some College (30-59 credits) Some College (60+ credits)",
+      "displayOrder": 24,
+      "active": true,
+      "programs": []
+    },
+    {
+      "id": "associates-degree",
+      "name": "Associates Degree",
+      "displayOrder": 25,
+      "active": true,
+      "programs": []
+    },
+    {
+      "id": "bachelors-degree",
+      "name": "Bachelors Degree",
+      "displayOrder": 26,
+      "active": true,
+      "programs": []
+    },
+    {
+      "id": "masters-degree",
+      "name": "Masters Degree",
+      "displayOrder": 27,
+      "active": true,
+      "programs": []
+    },
+    {
+      "id": "doctorates-phd",
+      "name": "Doctorates/PhD",
+      "displayOrder": 28,
+      "active": true,
+      "programs": []
+    }
+  ],
+  "publicProjection": true
+}

@@ -7,6 +7,7 @@ export function validateAvailability(value) {
     errors.push("Configuration must set previewOnly to true or false.");
   }
 
+  const isPublicProjection = Boolean(value.publicProjection === true);
   const campusIds = new Set();
   const campusOrders = new Set();
   const allProgramIds = new Set();
@@ -34,7 +35,7 @@ export function validateAvailability(value) {
     }
     campusOrders.add(campus.displayOrder);
     if (typeof campus.active !== "boolean") errors.push(`Campus "${campus.id}" must set active.`);
-    if (!value.previewOnly && campus.active && !isConfirmedMapping(campus.leadHoopId)) {
+    if (!value.previewOnly && !isPublicProjection && campus.active && !isConfirmedMapping(campus.leadHoopId)) {
       errors.push(`Active production campus "${campus.id}" requires a confirmed LeadHoop mapping.`);
     }
     if (value.previewOnly && Object.hasOwn(campus, "leadHoopId")) {
@@ -74,7 +75,7 @@ export function validateAvailability(value) {
       if (typeof program.active !== "boolean") {
         errors.push(`Program "${program.id}" in campus "${campus.id}" must set active.`);
       }
-      if (!value.previewOnly && campus.active && program.active && !isConfirmedMapping(program.leadHoopId)) {
+      if (!value.previewOnly && !isPublicProjection && campus.active && program.active && !isConfirmedMapping(program.leadHoopId)) {
         errors.push(`Active production program "${program.id}" requires a confirmed LeadHoop mapping.`);
       }
       if (value.previewOnly && Object.hasOwn(program, "leadHoopId")) {

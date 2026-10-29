@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-check.mjs",
+    "build": "node scripts/build-runtime-config.mjs && node scripts/build-public-availability.mjs && node scripts/build-check.mjs",
     "test": "node --test"
   },
   "dependencies": {

@@ -35,7 +35,7 @@ const programCardList = document.querySelector("#program-card-list");
 const programLoadError = document.querySelector("#program-load-error");
 const attribution = collectAttribution(window.location.search);
 const publicConfig = window.UEI_PUBLIC_CONFIG || {};
-let availability = { previewOnly: true, campuses: [] };
+let availability = { previewOnly: true, campuses: [], publicProjection: true };
 let currentStep = 1;
 let preferredProgram = "";
 let completing = false;
@@ -484,7 +484,7 @@ restartButton.addEventListener("click", () => {
   showStep(1);
 });
 
-async function loadPreview() {
+async async function loadAvailability() {
   const response = await fetch("/data/uei-preview-campus-programs.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Preview data request failed: ${response.status}`);
   const data = await response.json();
@@ -493,7 +493,7 @@ async function loadPreview() {
   if (errors.length || data.previewOnly !== true) {
     throw new Error(`Invalid UEI preview data: ${errors.join(" ") || "previewOnly must be true."}`);
   }
-  availability = data;
+  availability = { ...data, publicProjection: true };
   updateCampusOptions();
   renderProgramCards();
   void attribution;
@@ -502,7 +502,7 @@ async function loadPreview() {
 populateStateOptions();
 
 try {
-  await loadPreview();
+  await loadAvailability();
 } catch (error) {
   console.error("UEI preview data could not be loaded.", error);
   programLoadError.textContent = "Campus and program preview could not be loaded. Please refresh to try again.";
@@ -510,5 +510,4 @@ try {
   campusSelect.disabled = true;
   programSelect.disabled = true;
 }
-
 showStep(currentStep, { focus: false });

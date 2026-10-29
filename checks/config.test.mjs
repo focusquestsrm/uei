@@ -62,10 +62,10 @@ test("outbound posting configuration is gated by the required server settings", 
   assert.equal(
     isSubmissionConfigured({
       LEAD_SUBMISSION_ENABLED: "true",
+      LEAD_TEST_MODE: "true",
       LEADHOOP_ENDPOINT: "https://example.com",
-      LEADHOOP_AUTHORIZATION: "token",
       LEADHOOP_CAMPAIGN_CODE: "campaign",
-      PUBLIC_SITE_URL: "https://uei-cbm.back2learn.com",
+      PUBLIC_SITE_URL: "http://localhost:8888",
       UEI_PRIVACY_POLICY_URL: "https://www.uei.edu/privacy-policy-terms/"
     }),
     true
@@ -73,9 +73,19 @@ test("outbound posting configuration is gated by the required server settings", 
   assert.equal(
     isSubmissionConfigured({
       LEAD_SUBMISSION_ENABLED: "true",
+      LEAD_TEST_MODE: "false",
       LEADHOOP_ENDPOINT: "https://example.com",
-      LEADHOOP_AUTHORIZATION: "token",
-      LEADHOOP_CAMPAIGN_CODE: "campaign"
+      LEADHOOP_CAMPAIGN_CODE: "campaign",
+      PUBLIC_SITE_URL: "http://localhost:8888"
+    }),
+    true
+  );
+  assert.equal(
+    isSubmissionConfigured({
+      LEAD_SUBMISSION_ENABLED: "true",
+      LEADHOOP_ENDPOINT: "https://example.com",
+      LEADHOOP_CAMPAIGN_CODE: "campaign",
+      PUBLIC_SITE_URL: "http://localhost:8888"
     }),
     false
   );

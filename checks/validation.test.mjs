@@ -14,7 +14,7 @@ import {
   validateZipCode
 } from "../src/js/address.mjs";
 import { validateLead } from "../netlify/functions/_shared/validation.mjs";
-import { handler } from "../netlify/functions/submit-lead.mjs";
+import { classifyLeadHoopResult, handler } from "../netlify/functions/submit-lead.mjs";
 
 const available = {
   previewOnly: false,

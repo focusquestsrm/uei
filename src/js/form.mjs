@@ -40,6 +40,15 @@ let currentStep = 1;
 let preferredProgram = "";
 let completing = false;
 
+function getSubmissionId() {
+  const storageKey = "uei-submission-id";
+  const existing = window.sessionStorage.getItem(storageKey);
+  if (existing) return existing;
+  const generated = `uei-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  window.sessionStorage.setItem(storageKey, generated);
+  return generated;
+}
+
 function generateVisitorToken() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -73,6 +82,9 @@ function buildSubmissionPayload() {
     campusId: campusSelect.value,
     programId: programSelect.value,
     consent: Boolean(values.consent),
+    signupUrl: window.location.href,
+    consentUrl: window.location.href,
+    submissionId: getSubmissionId(),
     test: false,
     lead_address: {
       address: String(values["lead_address[address]"] || "").trim(),
@@ -356,12 +368,12 @@ form.addEventListener("submit", async (event) => {
         body: JSON.stringify(buildSubmissionPayload())
       });
       const data = await response.json().catch(() => ({}));
-      if (response.ok && data.status === "accepted") {
+      if (response.ok && data.status === "accepted" && publicConfig.testMode !== true) {
         fireMetaLeadEvent();
         window.location.href = publicConfig.thankYouUrl || "/thank-you.html";
         return;
       }
-      if (response.ok && data.status === "business_rejected") {
+      if (response.ok && (data.status === "accepted" || data.status === "business_rejected")) {
         window.location.href = publicConfig.thankYouUrl || "/thank-you.html";
         return;
       }

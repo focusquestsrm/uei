@@ -128,32 +128,28 @@ export function validateLead(payload, availability) {
     errors.programId = "That campus and program combination is not currently available.";
   }
 
-  if (normalized.age !== null) {
-    const age = Number(normalized.age);
-    if (!Number.isInteger(age) || age < 18) errors.age = "You must be at least 18 years old.";
+  if (normalized.age === null || !Number.isInteger(Number(normalized.age)) || Number(normalized.age) < 18) {
+    errors.age = "You must be at least 18 years old.";
   }
 
-  if (normalized.gender) {
-    if (!VALID_GENDERS.has(normalized.gender)) errors.gender = "Select a valid gender.";
+  if (!normalized.gender || !VALID_GENDERS.has(normalized.gender)) {
+    errors.gender = "Select a valid gender.";
   }
 
-  if (normalized.gradYear !== null) {
-    const year = Number(normalized.gradYear);
-    if (!Number.isInteger(year) || year < 1998 || year > 2024) {
-      errors.gradYear = "Enter a valid high school graduation year between 1998 and 2024.";
-    }
+  if (normalized.gradYear === null || !Number.isInteger(Number(normalized.gradYear)) || Number(normalized.gradYear) < 1998 || Number(normalized.gradYear) > 2024) {
+    errors.gradYear = "Enter a valid high school graduation year between 1998 and 2024.";
   }
 
-  if (normalized.militaryType) {
-    if (!VALID_MILITARY_TYPES.has(normalized.militaryType)) errors.militaryType = "Select a valid military status.";
+  if (!normalized.militaryType || !VALID_MILITARY_TYPES.has(normalized.militaryType)) {
+    errors.militaryType = "Select a valid military status.";
   }
 
-  if (normalized.educationLevelId) {
-    if (!VALID_EDUCATION_LEVELS.has(normalized.educationLevelId)) errors.educationLevelId = "Select a valid education level.";
+  if (!normalized.educationLevelId || !VALID_EDUCATION_LEVELS.has(normalized.educationLevelId)) {
+    errors.educationLevelId = "Select a valid education level.";
   }
 
-  if (normalized.startDate) {
-    if (!VALID_START_DATES.has(normalized.startDate)) errors.startDate = "Select a valid start date.";
+  if (!normalized.startDate || !VALID_START_DATES.has(normalized.startDate)) {
+    errors.startDate = "Select a valid start date.";
   }
 
   if (normalized.hasAddressFields) {

@@ -46,9 +46,21 @@ const validLead = {
   lastName: "Taylor",
   email: "ari@example.test",
   phone: "(202) 555-0187",
+  age: 28,
+  gender: "F",
+  gradYear: 2015,
+  militaryType: "N",
+  educationLevelId: "2275",
+  startDate: "Immediately",
   campusId: "campus-west",
   programId: "program-a",
-  consent: true
+  consent: true,
+  lead_address: {
+    address: "123 Main St",
+    city: "St. Louis",
+    state: "MO",
+    zip: "63101"
+  }
 };
 
 test("phone normalization accepts supported US formats and rejects malformed values", () => {

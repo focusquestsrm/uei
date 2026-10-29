@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { validateAvailability } from "../../src/js/availability.mjs";
@@ -200,12 +201,13 @@ export function classifyLeadHoopResult(httpStatus, payload) {
   if (payload && typeof payload === "object") {
     const status = String(payload.status || payload.outcome || payload.result || "").trim().toLowerCase();
     const message = String(payload.message || payload.error || payload.reason || "").trim().toLowerCase();
+    const nestedReason = String(payload.data?.rejection_reason || payload.details?.rejection_reason || payload.rejection_reason || "").trim().toLowerCase();
     if (["accepted", "success", "ok", "processed", "posted"].includes(status)) return "accepted";
-    if (["business_rejected", "rejected", "declined", "not_approved", "disqualified"].includes(status) || payload.business_rejected === true) {
+    if (["business_rejected", "rejected", "declined", "not_approved", "disqualified"].includes(status) || payload.business_rejected === true || nestedReason.includes("business")) {
       return "business_rejected";
     }
     if (["duplicate", "duplicate_lead", "duplicate_submission", "already_received"].includes(status)) return "duplicate";
-    if (["failure", "invalid", "error", "bad_request", "validation_error", "ineligible", "not_accepted"].includes(status) || message.includes("invalid") || message.includes("validation") || message.includes("ineligible")) {
+    if (["failure", "invalid", "error", "bad_request", "validation_error", "ineligible", "not_accepted"].includes(status) || message.includes("invalid") || message.includes("validation") || message.includes("ineligible") || message.includes("business reject") || nestedReason.includes("invalid") || nestedReason.includes("validation")) {
       return "invalid";
     }
   }
@@ -218,11 +220,7 @@ export function classifyLeadHoopResult(httpStatus, payload) {
 
 function hashSubmissionKey(value) {
   const text = String(value || "");
-  let hash = 0;
-  for (let index = 0; index < text.length; index += 1) {
-    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
-  }
-  return `uei:${hash.toString(16).padStart(8, "0")}`;
+  return `uei:${createHash("sha256").update(text).digest("hex").slice(0, 32)}`;
 }
 
 function createMemoryStore() {
@@ -240,30 +238,21 @@ function createMemoryStore() {
 }
 
 async function getIdempotencyStore() {
-  try {
-    const { getStore } = await import("@netlify/blobs");
-    return getStore({ name: idempotencyStoreName, consistency: "strong" });
-  } catch {
-    return createMemoryStore();
-  }
+  const { getStore } = await import("@netlify/blobs");
+  return getStore({ name: idempotencyStoreName, consistency: "strong" });
 }
 
 async function readRecord(store, key) {
   if (!store || typeof store.get !== "function") return null;
   try {
-    if (typeof store.get === "function") {
-      return await store.get(key, { type: "json", consistency: "strong" });
-    }
+    return await store.get(key, { type: "json", consistency: "strong" });
   } catch {
-    // Falls back to the in-memory store interface below.
+    return null;
   }
-  return null;
 }
 
 async function writeRecord(store, key, record, options = {}) {
-  if (!store || typeof store.setJSON !== "function") {
-    return null;
-  }
+  if (!store || typeof store.setJSON !== "function") return null;
   try {
     return await store.setJSON(key, record, options);
   } catch {
@@ -286,12 +275,12 @@ async function reserveSubmission(store, submissionId, requestId, now) {
     return { owner: false, record: existing };
   }
   const created = await writeRecord(store, key, candidate, { onlyIfNew: true });
-  if (created) return { owner: true, record: candidate };
+  if (created && created.modified !== false) return { owner: true, record: candidate };
   const latest = await readRecord(store, key);
   if (latest && (now - new Date(latest.updatedAt || latest.createdAt || now).getTime()) < idempotencyTtlMs) {
     return { owner: false, record: latest };
   }
-  return { owner: true, record: candidate };
+  return { owner: false, record: latest || candidate, reason: "reservation-failed" };
 }
 
 async function completeSubmission(store, submissionId, state, metadata) {
@@ -306,7 +295,7 @@ async function completeSubmission(store, submissionId, state, metadata) {
     result: metadata || null
   };
   if (typeof store.setJSON === "function") {
-    await store.setJSON(key, updated, { onlyIfNew: false });
+    await store.setJSON(key, updated);
   }
   return updated;
 }

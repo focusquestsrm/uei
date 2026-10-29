@@ -39,7 +39,7 @@ let availability = { previewOnly: true, campuses: [] };
 let currentStep = 1;
 let preferredProgram = "";
 let completing = false;
-
+ensureJornayaScript();
 function getSubmissionId() {
   const storageKey = "uei-submission-id";
   const existing = window.sessionStorage.getItem(storageKey);
@@ -49,20 +49,36 @@ function getSubmissionId() {
   return generated;
 }
 
-function generateVisitorToken() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+function ensureJornayaScript() {
+  if (document.querySelector("script[data-jornaya]") || typeof window === "undefined") return;
+  const script = document.createElement("script");
+  script.src = "https://api.jornaya.com/visitor/v1/leadid.js";
+  script.async = true;
+  script.defer = true;
+  script.setAttribute("data-jornaya", "true");
+  document.head.appendChild(script);
+}
+
+function getJornayaVisitorToken() {
+  const tokenField = document.querySelector("#jornaya-visitor-token");
+  const candidates = [
+    tokenField?.value,
+    window?.Jornaya?.visitorToken,
+    window?.Jornaya?.getVisitorToken?.(),
+    window?.__JORNAYA_VISITOR_TOKEN__
+  ];
+  for (const candidate of candidates) {
+    const value = String(candidate ?? "").trim();
+    if (value && value !== "undefined" && value !== "null") return value;
   }
-  return `uei-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  return "";
 }
 
 function ensureJornayaVisitorToken() {
   const tokenField = document.querySelector("#jornaya-visitor-token");
-  const tokenValue = tokenField?.value?.trim();
-  if (tokenValue) return tokenValue;
-  const newValue = generateVisitorToken();
-  if (tokenField) tokenField.value = newValue;
-  return newValue;
+  const tokenValue = getJornayaVisitorToken();
+  if (tokenField) tokenField.value = tokenValue;
+  return tokenValue;
 }
 
 function fireMetaLeadEvent() {
@@ -79,6 +95,12 @@ function buildSubmissionPayload() {
     lastName: String(values.lastName || "").trim(),
     email: String(values.email || "").trim(),
     phone: String(values.phone || "").trim(),
+    age: Number(values.age ?? 0),
+    gender: String(values.gender || "").toUpperCase(),
+    gradYear: Number(values.gradYear ?? 0),
+    militaryType: String(values.militaryType || "").toUpperCase(),
+    educationLevelId: String(values.educationLevelId || "").trim(),
+    startDate: String(values.startDate || "").trim(),
     campusId: campusSelect.value,
     programId: programSelect.value,
     consent: Boolean(values.consent),
@@ -105,6 +127,12 @@ const fields = {
   lastName: [form.elements.namedItem("lastName"), document.querySelector("#last-name-error")],
   email: [form.elements.namedItem("email"), document.querySelector("#email-error")],
   phone: [phoneInput, document.querySelector("#phone-error")],
+  age: [form.elements.namedItem("age"), document.querySelector("#age-error")],
+  gender: [form.elements.namedItem("gender"), document.querySelector("#gender-error")],
+  gradYear: [form.elements.namedItem("gradYear"), document.querySelector("#grad-year-error")],
+  militaryType: [form.elements.namedItem("militaryType"), document.querySelector("#military-type-error")],
+  educationLevelId: [form.elements.namedItem("educationLevelId"), document.querySelector("#education-level-error")],
+  startDate: [form.elements.namedItem("startDate"), document.querySelector("#start-date-error")],
   address: [streetInput, document.querySelector("#street-address-error")],
   city: [cityInput, document.querySelector("#city-error")],
   state: [stateSelect, document.querySelector("#state-error")],
@@ -267,6 +295,42 @@ function validateContact() {
   if (normalizedPhone) phoneInput.value = normalizedPhone;
   valid = valid && !phoneError;
 
+  const ageValue = Number(fields.age[0].value);
+  const ageError = Number.isInteger(ageValue) && ageValue >= 18 ? "" : "You must be at least 18 years old.";
+  setFieldError("age", ageError);
+  valid = valid && !ageError;
+
+  const genderValue = String(fields.gender[0].value || "").toUpperCase();
+  const genderError = ["M", "F"].includes(genderValue) ? "" : "Select a valid gender.";
+  setFieldError("gender", genderError);
+  valid = valid && !genderError;
+
+  const gradYearValue = Number(fields.gradYear[0].value);
+  const gradYearError = Number.isInteger(gradYearValue) && gradYearValue >= 1998 && gradYearValue <= 2024
+    ? ""
+    : "Enter a valid high school graduation year between 1998 and 2024.";
+  setFieldError("gradYear", gradYearError);
+  valid = valid && !gradYearError;
+
+  const militaryTypeValue = String(fields.militaryType[0].value || "").toUpperCase();
+  const militaryTypeError = ["Y", "N"].includes(militaryTypeValue) ? "" : "Select a valid military status.";
+  setFieldError("militaryType", militaryTypeError);
+  valid = valid && !militaryTypeError;
+
+  const educationLevelValue = String(fields.educationLevelId[0].value || "").trim();
+  const educationLevelError = ["2274", "2275", "2276", "2277", "2278", "2279"].includes(educationLevelValue)
+    ? ""
+    : "Select a valid education level.";
+  setFieldError("educationLevelId", educationLevelError);
+  valid = valid && !educationLevelError;
+
+  const startDateValue = String(fields.startDate[0].value || "").trim();
+  const startDateError = ["Immediately", "1-3 Months", "4-6 Months", "7-12 Months", "More than 1 Year", "Not Sure"].includes(startDateValue)
+    ? ""
+    : "Select a valid start date.";
+  setFieldError("startDate", startDateError);
+  valid = valid && !startDateError;
+
   const addressError = validateStreetAddress(streetInput.value);
   setFieldError("address", addressError);
   if (!addressError) streetInput.value = streetInput.value.trim();
@@ -358,6 +422,12 @@ form.addEventListener("submit", async (event) => {
   }
 
   if (publicConfig.submissionEnabled === true && typeof window !== "undefined") {
+    const tokenValue = ensureJornayaVisitorToken();
+    if (!tokenValue) {
+      feedback.textContent = "Jornaya is required to continue. Please wait a moment and try again.";
+      ensureJornayaScript();
+      return;
+    }
     completing = true;
     submitButton.disabled = true;
     submitButton.textContent = "Submitting…";
@@ -368,10 +438,8 @@ form.addEventListener("submit", async (event) => {
         body: JSON.stringify(buildSubmissionPayload())
       });
       const data = await response.json().catch(() => ({}));
-      if (response.ok && data.status === "accepted" && publicConfig.testMode !== true) {
+      if (response.ok && data.status === "accepted" && data.testMode === false && publicConfig.testMode !== true) {
         fireMetaLeadEvent();
-        window.location.href = publicConfig.thankYouUrl || "/thank-you.html";
-        return;
       }
       if (response.ok && (data.status === "accepted" || data.status === "business_rejected")) {
         window.location.href = publicConfig.thankYouUrl || "/thank-you.html";

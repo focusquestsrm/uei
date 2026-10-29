@@ -85,6 +85,8 @@ function fireMetaLeadEvent() {
   const pixelId = publicConfig.pixelId || "1394019919533755";
   const fbq = window.fbq;
   if (!pixelId || typeof fbq !== "function") return;
+  if (window.__UEI_META_LEAD_FIRED__ === true) return;
+  window.__UEI_META_LEAD_FIRED__ = true;
   fbq("trackSingle", pixelId, "Lead");
 }
 

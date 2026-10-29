@@ -197,24 +197,42 @@ async function submitToLeadHoop(form, environment) {
   }
 }
 
+function extractReasonText(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim().toLowerCase();
+  if (Array.isArray(value)) {
+    return value.map((item) => extractReasonText(item)).filter(Boolean).join(" ");
+  }
+  if (typeof value === "object") {
+    return Object.values(value).map((item) => extractReasonText(item)).filter(Boolean).join(" ");
+  }
+  return String(value).trim().toLowerCase();
+}
+
 export function classifyLeadHoopResult(httpStatus, payload) {
+  const numericStatus = Number(httpStatus);
+  const statusCode = Number.isFinite(numericStatus) ? numericStatus : 0;
+  const isHttpSuccess = statusCode >= 200 && statusCode < 300;
+
   if (payload && typeof payload === "object") {
     const status = String(payload.status || payload.outcome || payload.result || "").trim().toLowerCase();
-    const message = String(payload.message || payload.error || payload.reason || "").trim().toLowerCase();
-    const nestedReason = String(payload.data?.rejection_reason || payload.details?.rejection_reason || payload.rejection_reason || "").trim().toLowerCase();
-    if (["accepted", "success", "ok", "processed", "posted"].includes(status)) return "accepted";
-    if (["business_rejected", "rejected", "declined", "not_approved", "disqualified"].includes(status) || payload.business_rejected === true || nestedReason.includes("business")) {
+    const message = extractReasonText(payload.message || payload.error || payload.reason || payload.reason_text || payload.message_text || payload.details || payload.data || payload.rejection_reason);
+    const nestedReason = extractReasonText(payload.data?.rejection_reason || payload.details?.rejection_reason || payload.rejection_reason || payload.data || payload.details || payload.reason);
+
+    if (["business_rejected", "rejected", "declined", "not_approved", "disqualified"].includes(status) || payload.business_rejected === true || message.includes("advertiser rejected") || message.includes("business reject") || message.includes("business rejected") || nestedReason.includes("advertiser rejected") || nestedReason.includes("business reject") || nestedReason.includes("business rejected") || nestedReason.includes("rejected post")) {
       return "business_rejected";
     }
-    if (["duplicate", "duplicate_lead", "duplicate_submission", "already_received"].includes(status)) return "duplicate";
-    if (["failure", "invalid", "error", "bad_request", "validation_error", "ineligible", "not_accepted"].includes(status) || message.includes("invalid") || message.includes("validation") || message.includes("ineligible") || message.includes("business reject") || nestedReason.includes("invalid") || nestedReason.includes("validation")) {
+    if (["duplicate", "duplicate_lead", "duplicate_submission", "already_received"].includes(status) || message.includes("duplicate") || nestedReason.includes("duplicate")) return "duplicate";
+    if (["failure", "invalid", "error", "bad_request", "validation_error", "ineligible", "not_accepted"].includes(status) || message.includes("invalid") || message.includes("validation") || message.includes("ineligible") || nestedReason.includes("invalid") || nestedReason.includes("validation")) {
       return "invalid";
     }
+    if (["accepted", "success", "ok", "processed", "posted"].includes(status) && isHttpSuccess) return "accepted";
   }
-  if (httpStatus === 409) return "duplicate";
-  if (httpStatus >= 500 || httpStatus === 504) return "infrastructure";
-  if (httpStatus >= 400) return "invalid";
-  if (httpStatus >= 200 && httpStatus < 300) return "ambiguous";
+
+  if (statusCode === 409) return "duplicate";
+  if (statusCode >= 500 || statusCode === 504) return "infrastructure";
+  if (statusCode >= 400) return "invalid";
+  if (isHttpSuccess) return "ambiguous";
   return "ambiguous";
 }
 
@@ -275,7 +293,7 @@ async function reserveSubmission(store, submissionId, requestId, now) {
     return { owner: false, record: existing };
   }
   const created = await writeRecord(store, key, candidate, { onlyIfNew: true });
-  if (created && created.modified !== false) return { owner: true, record: candidate };
+  if (created !== null && created !== false) return { owner: true, record: candidate };
   const latest = await readRecord(store, key);
   if (latest && (now - new Date(latest.updatedAt || latest.createdAt || now).getTime()) < idempotencyTtlMs) {
     return { owner: false, record: latest };

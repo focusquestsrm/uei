@@ -147,6 +147,12 @@ test("production availability requires approved mappings for active options", ()
   }).some((error) => error.includes("requires a confirmed LeadHoop mapping")));
 });
 
+test("HTTP failure responses are not accepted even when the body claims success", () => {
+  assert.equal(classifyLeadHoopResult(500, { status: "success", testing: true }), "infrastructure");
+  assert.equal(classifyLeadHoopResult(200, { status: "failure", reason: { base: ["Advertiser rejected post."] }, testing: true }), "business_rejected");
+  assert.equal(classifyLeadHoopResult(409, { status: "success", testing: true }), "duplicate");
+});
+
 test("preview selections and incomplete configuration cannot submit", async () => {
   const nullPayload = await handler({
     httpMethod: "POST",

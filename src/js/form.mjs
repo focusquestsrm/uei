@@ -35,7 +35,7 @@ const programCardList = document.querySelector("#program-card-list");
 const programLoadError = document.querySelector("#program-load-error");
 const attribution = collectAttribution(window.location.search);
 const publicConfig = window.UEI_PUBLIC_CONFIG || {};
-let availability = { previewOnly: true, campuses: [], publicProjection: true };
+let availability = { previewOnly: false, campuses: [], publicProjection: true };
 let currentStep = 1;
 let preferredProgram = "";
 let completing = false;
@@ -418,12 +418,17 @@ form.addEventListener("submit", async (event) => {
     focusFirstInvalid();
     return;
   }
-  if (!validateSelection() || availability.previewOnly !== true) {
+  if (!validateSelection()) {
+    feedback.textContent = "Please select an available campus and program before submitting.";
+    focusFirstInvalid();
+    return;
+  }
+  if (publicConfig.submissionEnabled !== true) {
     feedback.textContent = "This review is not configured for lead submission. No inquiry was sent.";
     return;
   }
 
-  if (publicConfig.submissionEnabled === true && typeof window !== "undefined") {
+  if (typeof window !== "undefined") {
     const tokenValue = ensureJornayaVisitorToken();
     if (!tokenValue) {
       feedback.textContent = "Jornaya is required to continue. Please wait a moment and try again.";
@@ -484,14 +489,14 @@ restartButton.addEventListener("click", () => {
   showStep(1);
 });
 
-async async function loadAvailability() {
-  const response = await fetch("/data/uei-preview-campus-programs.json", { cache: "no-store" });
-  if (!response.ok) throw new Error(`Preview data request failed: ${response.status}`);
+async function loadAvailability() {
+  const response = await fetch("/data/uei-public-campus-programs.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Public program data request failed: ${response.status}`);
   const data = await response.json();
   const { validateAvailability } = await import("./availability.mjs");
   const errors = validateAvailability(data);
-  if (errors.length || data.previewOnly !== true) {
-    throw new Error(`Invalid UEI preview data: ${errors.join(" ") || "previewOnly must be true."}`);
+  if (errors.length || data.publicProjection !== true || data.previewOnly !== false) {
+    throw new Error(`Invalid UEI public availability data: ${errors.join(" ") || "publicProjection must be true and previewOnly must be false."}`);
   }
   availability = { ...data, publicProjection: true };
   updateCampusOptions();

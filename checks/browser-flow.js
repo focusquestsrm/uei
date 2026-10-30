@@ -17,7 +17,7 @@ const CHROME_PATHS = [
   'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
 ];
 
-const state = { vendor: null, calls: [], store: null, testMode: true, tokenEnabled: true, blocked: [] };
+const state = { now: new Date('2026-10-27T16:00:00Z'), vendor: null, calls: [], store: null, testMode: true, tokenEnabled: true, blocked: [] };
 
 function memoryStore() {
   const data = new Map();
@@ -59,6 +59,7 @@ async function startServer() {
           LEADHOOP_CAMPAIGN_CODE: 'DUMMYCAMPAIGNCODE123'
         },
         store: state.store,
+        now: () => state.now,
         fetch: async (vendorUrl, init) => {
           state.calls.push({ url: vendorUrl, params: new URLSearchParams(init.body) });
           if (state.vendor.delay) await new Promise((resolve) => setTimeout(resolve, state.vendor.delay));
@@ -260,6 +261,31 @@ async function main() {
   ok((await page.textContent('[data-error="zip"]')).includes('outside the area'), 'validation: ZIP outside campus area blocked');
   ok(state.calls.length === 0, 'validation: no vendor post for out-of-area ZIP');
   await context.close();
+
+  // Exact consent text and link; checkbox unchecked.
+  reset();
+  ({ context, page } = await newPage(browser, origin, profile));
+  await page.goto(origin + '/');
+  const consentText = await page.textContent('label[for="leadid_tcpa_disclosure"]');
+  ok(consentText.startsWith('By clicking the button and submitting this form, I agree to UEI College and United Education Institute’s Privacy Policy and Terms, located at: https://www.uei.edu/privacy-policy-terms/. I also authorize') && consentText.endsWith('I may opt out at any time.'), 'consent: exact approved text rendered');
+  ok((await page.getAttribute('label[for="leadid_tcpa_disclosure"] a', 'href')) === 'https://www.uei.edu/privacy-policy-terms/', 'consent: privacy link href');
+  ok(!(await page.isChecked('#leadid_tcpa_disclosure')), 'consent: checkbox unchecked');
+  await context.close();
+
+  // Outside the delivery window (Sunday, Eastern): message shown, nothing posted, no navigation.
+  for (const [name, p] of Object.entries(profiles)) {
+    reset();
+    state.now = new Date('2026-10-25T16:00:00Z');
+    ({ context, page } = await newPage(browser, origin, p));
+    await page.goto(origin + '/');
+    await page.waitForFunction(() => document.getElementById('leadid_token').value.length === 36);
+    await fill(page, {});
+    await page.click('#submit-button');
+    await page.waitForSelector('#form-status:not([hidden])');
+    ok((await page.textContent('#form-status')).includes('Monday through Saturday') && state.calls.length === 0 && page.url().endsWith('/') && (await state.store.getWithMetadata('x')) === null, 'closed window (' + name + '): message, no post, stays on form');
+    await context.close();
+    state.now = new Date('2026-10-27T16:00:00Z');
+  }
 
   // Missing Jornaya token blocks submit.
   reset();

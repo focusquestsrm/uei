@@ -6,6 +6,7 @@ const phone = require('../../../src/js/phone');
 const rules = require('../../../src/js/rules');
 const campusConfig = require('../../../config/campus-programs.json');
 const { classify } = require('./leadhoop-response');
+const deliveryWindow = require('./delivery-window');
 const { FORM_PATHS, LEADHOOP_ENDPOINT, MAX_BODY_LENGTH, MEDIA_TYPE, VENDOR_TIMEOUT_MS, readConfiguration, validClientIp } = require('./config');
 const {
   completeSubmission,
@@ -188,6 +189,14 @@ async function handleSubmission(event, options) {
     return reply(503, { outcome: 'unavailable', retryable: true });
   }
   if (!originAllowed(event, configuration.origin)) return reply(403, { outcome: 'validation_error' });
+
+  // Outside the delivery window nothing is reserved, posted, queued, or stored; the visitor
+  // is asked to come back and submit again.
+  const now = settings.now ? settings.now() : new Date();
+  if (!deliveryWindow.isOpen(now)) {
+    log('outside_delivery_window', {});
+    return reply(503, { outcome: 'closed', retryable: true, message: deliveryWindow.MESSAGE });
+  }
 
   const clientIp = validClientIp(event.clientIp);
   if (!clientIp) {

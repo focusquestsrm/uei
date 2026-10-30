@@ -55,11 +55,19 @@ Intentionally not carried over: Google Places, program availability/cap admin fu
 - Gender and military status are collected from the user; no defaults.
 - Grad year options are 1998–2024 (campaign rule overrides the broader spec list). No "no diploma" option exists in the spec.
 
+## Delivery window
+
+Enforced server-side in `netlify/functions/_shared/delivery-window.js` using `America/New_York` (daylight saving handled by the time zone database). Per the posting spec (verified: "Sunday: Paused", "Monday–Saturday: 09:00 - 21:00 Eastern Time (ET)"), submissions are accepted Monday–Saturday and refused on Sunday. The check runs before idempotency reservation and vendor posting, returns HTTP 503 `{outcome:'closed', message}`, and stores/queues nothing; the visitor sees a message and can submit again during open hours.
+
+Boundary ambiguity: the spec does not say whether 21:00 is inclusive. The window is treated as **09:00:00 inclusive to 21:00:00 exclusive** (20:59:59 accepted, 21:00:00 refused), and Sunday is judged by Eastern local date, not UTC. Confirm with LeadHoop if the end is meant to be inclusive.
+
+## Copy and disclosures review
+
+The page was reviewed against the UEI campaign brief and IEC Marketing Vendor Guidelines (4.6.2026). Unsupported copy ("job-ready skills") was replaced with approved wording; the consent is the exact IEC-approved TCPA text, with the privacy URL linked; the footer carries the length/employment disclaimers, Statement of Non-Discrimination link, auxiliary-aids line, "All programs not available at all campus locations", financial-aid line, and the ACCET/ACCSC accreditation statements. No photos, incentive language, or LaunchYourDegree mentions are used.
+
 ## Open decisions / not verified
 
 1. **Oceanside** – marked Active in the campus table but a 2026-10-07 note says to pause it. Currently **paused** (all offerings inactive).
-2. **Gardena Automotive Technician and Medical Assistant** – a note pauses them but they are absent from the program table. Kept **paused** (IDs 226132 / 226136 unverified).
-3. **Delivery schedule** – spec shows Sunday paused and Mon–Sat 09:00–21:00 ET. Not enforced in code.
-4. Privacy-policy / terms links are not on the form because no approved UEI URLs were provided.
-5. The UEI creative docx and the IEC vendor-guidelines PDF were not available; copy was taken from the earlier scaffold's text. Review against both before launch.
-6. Campus ID 30464 ("Online") appears only in the state-restrictions table and is excluded.
+2. **Gardena Automotive Technician and Medical Assistant** – a note pauses them but they are absent from the program table, while the IEC guideline matrix lists them for Gardena. Kept **paused** (IDs 226132 / 226136 unverified); confirm against the current SparkRoom matrix.
+3. 21:00 boundary inclusivity (see Delivery window).
+4. Campus ID 30464 ("Online") appears only in the state-restrictions table and is excluded.

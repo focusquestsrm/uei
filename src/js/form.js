@@ -269,6 +269,9 @@
     if (outcome === 'invalid_request' || outcome === 'validation_error') {
       clearSubmissionId();
       showStatus('We could not accept some of your information. Please review your answers and try again.');
+    } else if (outcome === 'closed') {
+      // Nothing was sent or stored; the same submission id stays valid for a later attempt.
+      showStatus(response.message || 'We are not accepting requests right now. Please try again later.');
     } else if (outcome === 'pending') {
       showStatus('Your request is still being processed. Please wait a moment before trying again.');
     } else {

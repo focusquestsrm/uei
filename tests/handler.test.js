@@ -6,8 +6,10 @@ const { handleSubmission } = require('../netlify/functions/_shared/submit-lead-h
 const idem = require('../netlify/functions/_shared/submission-idempotency');
 const { ENV, SUCCESS, campusConfig, event, memoryStore, validBody, vendorFetch } = require('./helpers');
 
+const OPEN_NOW = () => new Date('2026-10-27T16:00:00Z');
+
 function run(body, options) {
-  const settings = Object.assign({ env: ENV, store: memoryStore(), fetch: vendorFetch(SUCCESS) }, options);
+  const settings = Object.assign({ env: ENV, store: memoryStore(), fetch: vendorFetch(SUCCESS), now: OPEN_NOW }, options);
   return handleSubmission(event(body), settings).then((result) => ({ result, settings, json: JSON.parse(result.body) }));
 }
 
@@ -59,7 +61,7 @@ test('blocked before reservation when not configured, origin wrong, or IP missin
   assert.equal(r.settings.fetch.calls.length, 0);
   r = await run(validBody(), { env: Object.assign({}, ENV, { LEADHOOP_CAMPAIGN_CODE: '' }) });
   assert.equal(r.result.statusCode, 503);
-  const s = { env: ENV, store: memoryStore(), fetch: vendorFetch(SUCCESS) };
+  const s = { env: ENV, store: memoryStore(), fetch: vendorFetch(SUCCESS), now: OPEN_NOW };
   assert.equal((await handleSubmission(event(validBody(), { headers: { origin: 'https://evil.test' } }), s)).statusCode, 403);
   assert.equal((await handleSubmission(event(validBody(), { headers: {} }), s)).statusCode, 403);
   assert.equal((await handleSubmission(event(validBody(), { clientIp: '' }), s)).statusCode, 400);

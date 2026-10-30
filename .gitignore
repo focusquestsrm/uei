@@ -1,7 +1,9 @@
 node_modules/
-.netlify/
-dist/
 .env
 .env.*
 !.env.example
-npm-debug.log*
+.netlify/
+src/js/runtime-config.js
+src/js/campus-choices.js
+checks/output/
+*.log

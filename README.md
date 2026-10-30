@@ -1,60 +1,65 @@
-# UEI Back2Learn campaign rebuild
+# UEI College – Back2Learn landing page
 
-This UEI project was rebuilt from the actual authorized UMA Kayla reference app in `focusquestsrm/uma-landing-page`, branch `fallon-duplicate`, pinned at `2076e82b2ad13fb5874a83a396bcb0a4db250f49`.
+Static landing page plus one Netlify Function that posts leads to LeadHoop (offer "B2L - UEI College (new) (289)").
+The page and function are adapted from the UMA Kayla app (`focusquestsrm/uma-landing-page`, branch `fallon-duplicate`,
+commit `2076e82b2ad13fb5874a83a396bcb0a4db250f49`), changed to UEI's campus-dependent posting contract.
 
-The rebuild keeps the reference flow and field architecture, while adapting the UEI campaign data, disclosure language, local validation, and server-side guarding. The browser loads a sanitized public projection of the server-side production campus/program matrix instead of the earlier preview-only placeholder data, and the submit flow remains disabled unless the server configuration explicitly enables outbound posting.
+## Commands
 
-The page uses the supplied UEI TCPA disclosure, privacy-policy link, Open Sans, and IEC marketing palette, with program length, financial-aid, career-services, campus-availability, and employment qualifications displayed alongside relevant claims. It describes UEI's hybrid learning as online coursework combined with in-person hands-on training in campus labs; it does not describe the programs as fully online.
+| Command | Purpose |
+| --- | --- |
+| `npm install` | Install dependencies |
+| `npm run build` | Generate `src/js/runtime-config.js` and `src/js/campus-choices.js` (both git-ignored) from `config/campus-programs.json` |
+| `npm test` | Build, then unit and handler tests (`node --test`, vendor `fetch` is always mocked) |
+| `npm run check:browser` | Desktop and mobile browser flow against a local server; all external hosts are blocked or stubbed; screenshots go to `checks/output/` |
 
-## Reference and supplied assets
+## Netlify environment variables
 
-- Authorized reference: [focusquestsrm/uma-landing-page](https://github.com/focusquestsrm/uma-landing-page), branch `fallon-duplicate`, pinned at `2076e82b2ad13fb5874a83a396bcb0a4db250f49`.
-- The reference README identifies `src/data/uma-kayla-programs.csv`; the branch's page, form flow, styles, Back2Learn footer attribution, and shared browser/server phone-normalization pattern were reviewed. Production at `https://uma.back2learn.com/` does not expose a verifiable commit, so whether it matches the pinned branch could not be confirmed.
-- Phone normalization and 10-digit US validation are performed in the browser and repeated server-side using the UEI shared helper.
-- UEI logo: `src/image/uei-college-horizontal.jpg`, the horizontal UEI College logo downloaded from the Canto asset collection linked by the supplied IEC Marketing Vendor Guidelines. The local file is JPEG despite the upstream asset's misleading `.png` filename.
-- Back2Learn logo: downloaded from the official Back2Learn site at `https://www.back2learn.com/wp-content/uploads/2021/05/B2L-logo.png` and used as the horizontal wordmark beside the UEI logo in the header; the footer continues to use the text attribution model from the reference review.
-- No approved UEI campus photography was found in the supplied materials or reviewed asset collection. The hero and campus artwork are abstract CSS illustration, not depictions of real campuses.
+Set under Site configuration → Environment variables. Scope: **Functions** (runtime) for all four; none are needed at build time.
 
-## Local preview
+| Name | Secret | Purpose | Source |
+| --- | --- | --- | --- |
+| `LEAD_SUBMISSION_ENABLED` | no | `true` allows posting; anything else blocks posting (503). Start `false`. | You |
+| `LEAD_TEST_MODE` | no | `true` sends `lead[test]=true` (accepted, not delivered). Must be exactly `true` or `false`; blank blocks posting and is treated as test. Set `false` only at live launch. | You |
+| `SITE_URL` | no | Production origin, e.g. `https://example.com`. Used for the `Origin` check, `lead[signup_url]`, and `lead[consent_url]` validation. HTTPS required (loopback allowed for local tests). | Production domain |
+| `LEADHOOP_CAMPAIGN_CODE` | **yes** | Server-only `campaign_code` from the LeadHoop posting specs. Never committed. | LeadHoop posting specs, "Campaign Code" |
 
-Requires Node.js 18 or later. No third-party npm packages are required.
+No authorization token or FPI is required by the UEI spec. Nothing secret is sent to the browser.
 
-```powershell
-npm install
-npm test
-npm run build
-npx netlify dev
-```
+## Where things live
 
-Open the local URL printed by Netlify Dev. The form supports campus selection, campus-dependent program selection, guided contact details, phone normalization, validation, unchecked required consent, Back navigation with preserved fields, and a completion screen. Completion is only a preview; no HTTP request or conversion event is triggered.
+- `config/campus-programs.json` – single maintained source: campuses, programs, offerings, LeadHoop IDs, campus ZIP lists. Set `active: false` on a campus or offering to pause it; paused options disappear from the form and are rejected by the server. Re-run `npm run build`.
+- `netlify/functions/submit-lead.mjs` → `_shared/modern-wrapper.mjs` → `_shared/submit-lead-handler.js` (validation, posting, outcomes), `submission-idempotency.js` (Netlify Blobs store `uei-lead-idempotency`, 24 h), `leadhoop-response.js`, `config.js`.
+- `src/js/` shared browser/server rules: `phone.js`, `address.js`, `rules.js`, `catalog.js`; browser-only `form.js`, `meta-pixel.js`.
 
-## Production availability and campus/program configuration
+## Source → destination from UMA
 
-`src/data/uei-preview-campus-programs.json` remains the browser-side preview matrix used for the UX and testing flow. The exported LeadHoop posting specs define the live campaign availability and routing values; the server-only file `netlify/data/uei-campus-programs.json` mirrors those values while keeping the known contract conflicts paused.
+| UMA | UEI |
+| --- | --- |
+| `netlify/functions/_shared/submit-lead-handler.js` | `_shared/submit-lead-handler.js` (POST form-encoded, no auth header, campus/program/ZIP resolution, trusted client IP, test mode) |
+| `_shared/submission-idempotency.js` | `_shared/submission-idempotency.js` (store renamed, replay returns original outcome, etag required) |
+| `_shared/leadhoop-response.js` | `_shared/leadhoop-response.js` (HTTP status and body evaluated together) |
+| `_shared/modern-wrapper.mjs`, `submit-lead.mjs` | same names; client IP taken only from the platform |
+| `src/js/function2.js` | `src/js/form.js` (3 steps, campus-dependent programs, real thank-you page) |
+| `src/js/phone.js`, `meta-pixel.js` | same names (UEI Pixel ID, `(AAA) BBB-CCCC` formatting) |
+| `src/index.html`, `styles.css` | rewritten for UEI; no UMA images or Bootstrap CDN |
+| South University `submit-lead.js` / `function2.js` @ `2701d70` | `src/js/address.js` (format checks only, no existence claims) |
 
-The live matrix is read server-side for validation on every request. Use stable production IDs and `leadHoopId` values from the approved posting specs; preview IDs remain forbidden in production. The shared availability validator rejects impossible combinations and requires a confirmed mapping for every active campus/program pair.
+Intentionally not carried over: Google Places, program availability/cap admin functions, scheduled reset, TrustedForm, `campaign_id`/`meta_event_id` forwarding.
 
-The current public spec history includes a direct contradiction for two cases: the campus table shows Oceanside as active, but the October 7 change note says to pause it, and Gardena lists the campus as active while the same note pauses Automotive Technician and Medical Assistant. Those contradictory options remain set to `active: false` in the server file until the campaign owner confirms the final matrix. The function respects those pauses and rejects any attempt to select them.
+## Posting behavior
 
-To pause a campus or one campus/program combination, change its `active` flag to `false` in the server-only file and deploy the change. The function reads current availability for each request, so an option paused after a form was opened is rejected. Reactivate only after the authorized availability owner confirms it. Do not expose credentials or create a browser-side administrative interface.
+- Endpoint `https://back2learn-post.leadhoop.com/incoming/leads`. The spec lists `http://`; the same host answers on HTTPS, so HTTPS is used.
+- Outcomes: `accepted` (2xx + `success`), `rejected` (caps, advertiser, verification), `invalid_request`, `duplicate`, `unavailable` (non-2xx, including a success-looking body), `ambiguous` (timeout/network/unreadable). `unavailable`/`ambiguous` are never reposted; the same submission id replays the stored outcome.
+- Meta `Lead` fires only for an HTTP-OK `accepted` response with `testMode:false` and no `replay`. Inherited Back2Learn tracking is kept: `_fbc`→`subid2`, `_fbp`→`subid3`, `fbclid`→`subid4`, plus `utm_*`. `subid` itself is never sent.
+- Gender and military status are collected from the user; no defaults.
+- Grad year options are 1998–2024 (campaign rule overrides the broader spec list). No "no diploma" option exists in the spec.
 
-## Submission and launch dependencies
+## Open decisions / not verified
 
-Outbound posting is disabled in `.env.example` (`LEAD_SUBMISSION_ENABLED=false`), the checked-in production availability is empty, and the browser preview contains no posting request. The Netlify function validates consent, contact fields, normalized phone, and the current active mapped campus/program pair, and rejects preview selections. No production leads or test leads have been sent.
-
-Before implementation or launch, obtain and verify:
-
-1. An authorized export of the complete LeadHoop posting specifications for campaign 12213. The supplied admin URL redirects to sign-in; do not infer endpoint, posting/campaign code, authorization, FPI, required fields, response rules, or fixed routing values from its URL.
-2. The current UEI Sparkroom availability matrix and confirmed LeadHoop mappings for each campus/program pair, plus any eligibility, ZIP, distance, cap, or other acceptance rules.
-3. Confirmed field mappings for Jordan traffic attribution and `fbclid`, `_fbc`, and `_fbp`; no attribution fields are currently mapped to LeadHoop subids.
-4. Required address fields and validation, if any. There is no address autocomplete or Google Maps/Places integration.
-5. Confirmed deduplication/idempotency storage, ambiguous-response handling, and separate accepted/rejected redirect destinations.
-6. Any approved configuration for Meta Pixel, TrustedForm, Jornaya, and any conversion-event conditions. No UMA identifiers were copied and no preview, validation, rejected, or failed submission can fire a successful conversion event.
-7. Any approved demographic answers and mappings if the posting specs require them. The page does not hardcode gender or other demographic answers.
-8. Confirmation of the production domain. `uei.back2learn.com` is only a proposed domain.
-
-After the specifications are supplied, implement and test the protected server-side posting flow, durable deduplication, ambiguous-response safeguards, and accepted/rejected redirects. Keep authorization, FPI, endpoint, routing values, and other protected settings in server environment variables with nonfunctional placeholders in `.env.example`. Keep `LEAD_SUBMISSION_ENABLED=false` until configuration and end-to-end review are approved. Do not send a lead while testing without separate authorization.
-
-## Deployment
-
-`netlify.toml` configures the static build and serverless function. This page is not launch-ready while the posting specifications and approved availability/mappings are missing. Do not enable posting, configure DNS, or treat the proposed custom domain as confirmed.
+1. **Oceanside** – marked Active in the campus table but a 2026-10-07 note says to pause it. Currently **paused** (all offerings inactive).
+2. **Gardena Automotive Technician and Medical Assistant** – a note pauses them but they are absent from the program table. Kept **paused** (IDs 226132 / 226136 unverified).
+3. **Delivery schedule** – spec shows Sunday paused and Mon–Sat 09:00–21:00 ET. Not enforced in code.
+4. Privacy-policy / terms links are not on the form because no approved UEI URLs were provided.
+5. The UEI creative docx and the IEC vendor-guidelines PDF were not available; copy was taken from the earlier scaffold's text. Review against both before launch.
+6. Campus ID 30464 ("Online") appears only in the state-restrictions table and is excluded.

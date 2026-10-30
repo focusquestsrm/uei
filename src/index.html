@@ -1,331 +1,246 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#313e48">
-    <meta name="description" content="Explore campus-based and hybrid career training programs at UEI College.">
-    <title>Back2Learn | UEI College</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/site.css">
-    <script src="/js/runtime-config.js"></script>
-    <script type="module" src="/js/form.mjs"></script>
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="site-header-branding">
-        <a class="brand" href="/" aria-label="UEI College">
-          <img src="/image/uei-college-horizontal.jpg" alt="UEI College">
-        </a>
-        <a class="brand brand-back2learn" href="https://www.back2learn.com/" target="_blank" rel="noopener noreferrer" aria-label="Back2Learn">
-          <img src="/image/back2learn-logo.png" alt="Back2Learn">
-        </a>
-      </div>
-      <a class="header-link" href="#programs">Explore programs <span aria-hidden="true">↓</span></a>
-    </header>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Back to Learn | UEI College Career Training</title>
+  <meta name="description" content="Explore career training programs at UEI College campuses in California, Arizona, and Washington. Request information today.">
+  <link rel="preload" href="/fonts/open-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <img class="logo-uei" src="/image/uei-college-horizontal.jpg" alt="UEI College" width="240" height="48">
+      <a class="btn btn-cta btn-small" href="#apply">Request Information</a>
+    </div>
+  </header>
 
-    <main>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-background" aria-hidden="true">
-          <span class="hero-orbit hero-orbit-one"></span>
-          <span class="hero-orbit hero-orbit-two"></span>
-          <span class="hero-sun"></span>
-          <span class="hero-gridline"></span>
-          <span class="hero-panel"></span>
-          <span class="hero-panel-detail"></span>
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <img class="logo-b2l" src="/image/back2learn-logo.png" alt="Back2Learn" width="200" height="80">
+          <h1>Train for a career in as few as 10 months*</h1>
+          <p class="lead">UEI College combines online classes with hands-on labs on campus two days a week, so you can build job-ready skills with support along the way.</p>
+          <ul class="checks">
+            <li>Hybrid format: online classes plus hands-on campus labs</li>
+            <li>Day and evening classes</li>
+            <li>Financial aid for those who qualify</li>
+            <li>Career placement assistance**</li>
+          </ul>
         </div>
-        <div class="hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow">Career training built for real life</p>
-            <h1 id="hero-title">Build a life and a future you can be proud of.</h1>
-            <p class="hero-intro">Explore practical career training at UEI College. Learn through a hybrid format that pairs online classes with hands-on learning in on-campus labs.</p>
-            <a class="button button-bright hero-cta" href="#inquiry-form">Find a program <span aria-hidden="true">→</span></a>
-            <ul class="hero-points">
-              <li><span class="point-rule" aria-hidden="true"></span>Campus-based, hands-on labs</li>
-              <li><span class="point-rule" aria-hidden="true"></span>Day and evening classes available</li>
-            </ul>
-          </div>
 
-          <section class="inquiry-card" aria-labelledby="form-title">
-            <div class="form-card-top">
-              <div>
-                <p class="eyebrow">Take the next step</p>
-                <h2 id="form-title">Explore program options</h2>
+        <div class="form-card" id="apply">
+          <h2>Request Information</h2>
+          <p class="form-sub">Tell us about yourself. It takes about two minutes.</p>
+          <ol class="progress" aria-label="Form progress">
+            <li data-progress="1" class="active">Program</li>
+            <li data-progress="2">Background</li>
+            <li data-progress="3">Contact</li>
+          </ol>
+          <div id="form-status" class="form-status" role="alert" aria-live="polite" hidden></div>
+
+          <form id="lead-form" novalidate autocomplete="on">
+            <input type="hidden" name="lead[service_leadid]" id="leadid_token" value="">
+
+            <fieldset class="step" data-step="1">
+              <legend class="sr-only">Choose your campus and program</legend>
+              <div class="field">
+                <label for="campus">Campus</label>
+                <select id="campus" name="campus" required>
+                  <option value="">Select a campus</option>
+                </select>
+                <p class="error" data-error="campus" hidden></p>
               </div>
-              <span class="step-count" id="step-count">01 <span>/ 02</span></span>
-            </div>
-            <div class="step-progress" aria-hidden="true"><span id="step-progress-fill"></span></div>
+              <div class="field">
+                <label for="program">Program</label>
+                <select id="program" name="program" required disabled>
+                  <option value="">Select a campus first</option>
+                </select>
+                <p class="error" data-error="program" hidden></p>
+              </div>
+              <button type="button" class="btn btn-cta btn-block" data-next>Continue</button>
+            </fieldset>
 
-            <form id="inquiry-form" novalidate>
-              <input type="hidden" id="jornaya-visitor-token" name="jornayaVisitorToken">
-              <section class="form-step is-visible" data-step-panel="1" aria-labelledby="selection-title">
-                <h3 id="selection-title">Where would you like to study?</h3>
+            <fieldset class="step" data-step="2" hidden>
+              <legend class="sr-only">Your background and address</legend>
+              <div class="field">
+                <label for="education">Highest education completed</label>
+                <select id="education" name="education" required>
+                  <option value="">Select one</option>
+                </select>
+                <p class="error" data-error="education" hidden></p>
+              </div>
+              <div class="row">
                 <div class="field">
-                  <label for="campus">Choose a campus</label>
-                  <select id="campus" name="campusId" aria-describedby="campus-help campus-error" required>
-                    <option value="">Choose a campus</option>
+                  <label for="gradYear">High school graduation or GED year</label>
+                  <select id="gradYear" name="gradYear" required>
+                    <option value="">Select year</option>
                   </select>
-                  <p class="field-help" id="campus-help">Select a location to see available program options.</p>
-                  <p class="field-error" id="campus-error" aria-live="polite"></p>
+                  <p class="hint">Programs accept graduation years from 1998 to 2024.</p>
+                  <p class="error" data-error="gradYear" hidden></p>
                 </div>
                 <div class="field">
-                  <label for="program">Choose a program</label>
-                  <select id="program" name="programId" aria-describedby="program-help program-error" required disabled>
-                    <option value="">Select a campus first</option>
+                  <label for="age">Age</label>
+                  <input id="age" name="age" type="text" inputmode="numeric" maxlength="2" autocomplete="off" required>
+                  <p class="hint">You must be at least 18.</p>
+                  <p class="error" data-error="age" hidden></p>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="gender">Gender</label>
+                  <select id="gender" name="gender" required>
+                    <option value="">Select one</option>
                   </select>
-                  <p class="field-help" id="program-help">Program options vary by campus.</p>
-                  <p class="field-error" id="program-error" aria-live="polite"></p>
-                </div>
-                <p class="field-help" id="no-options" role="status" hidden></p>
-                <p class="availability-note" id="availability-note" role="status" hidden></p>
-                <div class="form-actions form-actions-end">
-                  <button class="button button-dark" id="continue-button" type="button">Continue <span aria-hidden="true">→</span></button>
-                </div>
-              </section>
-
-              <section class="form-step" data-step-panel="2" aria-labelledby="contact-title" hidden>
-                <h3 id="contact-title">How can we reach you?</h3>
-                <div class="field-row">
-                  <div class="field">
-                    <label for="first-name">First name</label>
-                    <input id="first-name" name="firstName" autocomplete="given-name" maxlength="100" aria-describedby="first-name-error" required>
-                    <p class="field-error" id="first-name-error" aria-live="polite"></p>
-                  </div>
-                  <div class="field">
-                    <label for="last-name">Last name</label>
-                    <input id="last-name" name="lastName" autocomplete="family-name" maxlength="100" aria-describedby="last-name-error" required>
-                    <p class="field-error" id="last-name-error" aria-live="polite"></p>
-                  </div>
+                  <p class="error" data-error="gender" hidden></p>
                 </div>
                 <div class="field">
-                  <label for="email">Email address</label>
-                  <input id="email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="email-error" required>
-                  <p class="field-error" id="email-error" aria-live="polite"></p>
+                  <label for="military">Active duty military?</label>
+                  <select id="military" name="military" required>
+                    <option value="">Select one</option>
+                  </select>
+                  <p class="error" data-error="military" hidden></p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="address">Street address</label>
+                <input id="address" name="address" type="text" autocomplete="address-line1" maxlength="100" required>
+                <p class="error" data-error="address" hidden></p>
+              </div>
+              <div class="field">
+                <label for="address2">Apartment, suite, or floor <span class="optional">(optional)</span></label>
+                <input id="address2" name="address2" type="text" autocomplete="address-line2" maxlength="50">
+                <p class="error" data-error="address2" hidden></p>
+              </div>
+              <div class="row row-3">
+                <div class="field">
+                  <label for="city">City</label>
+                  <input id="city" name="city" type="text" autocomplete="address-level2" maxlength="60" required>
+                  <p class="error" data-error="city" hidden></p>
                 </div>
                 <div class="field">
-                  <label for="phone">Phone number</label>
-                  <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="phone-help phone-error" required>
-                  <p class="field-help" id="phone-help">Enter a 10-digit U.S. phone number.</p>
-                  <p class="field-error" id="phone-error" aria-live="polite"></p>
-                </div>
-                <div class="field-row">
-                  <div class="field">
-                    <label for="age">Age</label>
-                    <input id="age" name="age" type="number" min="18" max="120" inputmode="numeric" aria-describedby="age-error" required>
-                    <p class="field-error" id="age-error" aria-live="polite"></p>
-                  </div>
-                  <div class="field">
-                    <label for="gender">Gender</label>
-                    <select id="gender" name="gender" aria-describedby="gender-error" required>
-                      <option value="">Select a gender</option>
-                      <option value="M">Male</option>
-                      <option value="F">Female</option>
-                    </select>
-                    <p class="field-error" id="gender-error" aria-live="polite"></p>
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field">
-                    <label for="grad-year">High school graduation year</label>
-                    <input id="grad-year" name="gradYear" type="number" min="1998" max="2024" inputmode="numeric" aria-describedby="grad-year-error" required>
-                    <p class="field-error" id="grad-year-error" aria-live="polite"></p>
-                  </div>
-                  <div class="field">
-                    <label for="military-type">Military status</label>
-                    <select id="military-type" name="militaryType" aria-describedby="military-type-error" required>
-                      <option value="">Select a status</option>
-                      <option value="Y">Yes</option>
-                      <option value="N">No</option>
-                    </select>
-                    <p class="field-error" id="military-type-error" aria-live="polite"></p>
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field">
-                    <label for="education-level">Highest level of education</label>
-                    <select id="education-level" name="educationLevelId" aria-describedby="education-level-error" required>
-                      <option value="">Select an education level</option>
-                      <option value="2274">Undergraduate Certificate</option>
-                      <option value="2275">Diploma</option>
-                      <option value="2276">Associate's</option>
-                      <option value="2277">Bachelor's</option>
-                      <option value="2278">Graduate Certificate</option>
-                      <option value="2279">Master's</option>
-                    </select>
-                    <p class="field-error" id="education-level-error" aria-live="polite"></p>
-                  </div>
-                  <div class="field">
-                    <label for="start-date">Desired start date</label>
-                    <select id="start-date" name="startDate" aria-describedby="start-date-error" required>
-                      <option value="">Select a start date</option>
-                      <option value="Immediately">Immediately</option>
-                      <option value="1-3 Months">1-3 Months</option>
-                      <option value="4-6 Months">4-6 Months</option>
-                      <option value="7-12 Months">7-12 Months</option>
-                      <option value="More than 1 Year">More than 1 Year</option>
-                      <option value="Not Sure">Not Sure</option>
-                    </select>
-                    <p class="field-error" id="start-date-error" aria-live="polite"></p>
-                  </div>
-                </div>
-                <div class="field">
-                  <label for="street-address">Street address</label>
-                  <input id="street-address" name="lead_address[address]" autocomplete="street-address" aria-describedby="street-address-error" required>
-                  <p class="field-error" id="street-address-error" aria-live="polite"></p>
-                </div>
-                <div class="field-row">
-                  <div class="field">
-                    <label for="city">City</label>
-                    <input id="city" name="lead_address[city]" autocomplete="address-level2" aria-describedby="city-error" required>
-                    <p class="field-error" id="city-error" aria-live="polite"></p>
-                  </div>
-                  <div class="field">
-                    <label for="state">State</label>
-                    <select id="state" name="lead_address[state]" autocomplete="address-level1" aria-describedby="state-error" required>
-                      <option value="">Select a state</option>
-                    </select>
-                    <p class="field-error" id="state-error" aria-live="polite"></p>
-                  </div>
+                  <label for="state">State</label>
+                  <select id="state" name="state" autocomplete="address-level1" required>
+                    <option value="">State</option>
+                  </select>
+                  <p class="error" data-error="state" hidden></p>
                 </div>
                 <div class="field">
                   <label for="zip">ZIP code</label>
-                  <input id="zip" name="lead_address[zip]" type="text" inputmode="numeric" autocomplete="postal-code" aria-describedby="zip-error" required>
-                  <p class="field-error" id="zip-error" aria-live="polite"></p>
+                  <input id="zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" required>
+                  <p class="error" data-error="zip" hidden></p>
                 </div>
-                <fieldset class="consent-field">
-                  <legend>Contact permission</legend>
-                  <label class="consent-label">
-                    <input id="consent" name="consent" type="checkbox" required aria-describedby="consent-error">
-                    <span>By clicking the button and submitting this form, I agree to UEI College and United Education Institute’s <a href="https://www.uei.edu/privacy-policy-terms/" target="_blank" rel="noopener noreferrer">Privacy Policy and Terms, located at: https://www.uei.edu/privacy-policy-terms/</a>. I also authorize and agree that a representative of UEI College and/or United Education Institute may contact me via email, telephone, text (Message &amp; data rates may apply. Messages are recurring.), via automatic telephone dialing system and/or artificial or prerecorded voice, for any purpose at the number and email I provided above. I understand I do not need to provide such consent to receive any good or service and that I may opt out at any time.</span>
-                  </label>
-                  <p class="field-error" id="consent-error" aria-live="polite"></p>
-                </fieldset>
-                <p class="privacy-note">Your consent is optional and is not required to receive any good or service.</p>
-                <div class="form-actions form-actions-between">
-                  <button class="button button-quiet" id="back-button" type="button"><span aria-hidden="true">←</span> Back</button>
-                  <button class="button button-dark" id="submit-button" type="submit">Finish preview <span aria-hidden="true">→</span></button>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" data-back>Back</button>
+                <button type="button" class="btn btn-cta" data-next>Continue</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="step" data-step="3" hidden>
+              <legend class="sr-only">Your contact information</legend>
+              <div class="row">
+                <div class="field">
+                  <label for="firstName">First name</label>
+                  <input id="firstName" name="firstName" type="text" autocomplete="given-name" maxlength="60" required>
+                  <p class="error" data-error="firstName" hidden></p>
                 </div>
-              </section>
-
-              <section class="form-step completion-step" data-step-panel="3" aria-labelledby="complete-title" hidden>
-                <span class="completion-mark" aria-hidden="true">
-                  <svg viewBox="0 0 32 32" focusable="false"><path d="m7 16 6 6L25 10"/></svg>
-                </span>
-                <p class="eyebrow">Preview complete</p>
-                <h3 id="complete-title">You’ve explored your UEI options.</h3>
-                <p id="completion-summary"></p>
-                <p class="completion-note">Nothing was submitted and no lead was sent.</p>
-                <button class="button button-quiet" id="restart-button" type="button">Start another preview <span aria-hidden="true">↻</span></button>
-              </section>
-              <p class="form-feedback" id="form-feedback" role="status" aria-live="polite"></p>
-            </form>
-            <p class="card-footnote">Programs vary by campus. <a href="#program-disclosures">See program disclosures</a>.</p>
-          </section>
-        </div>
-        <div class="hero-bottom" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-      </section>
-
-      <section class="program-section section-pad" id="programs" aria-labelledby="program-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Find your direction</p>
-            <h2 id="program-heading">Career paths with <span>hands-on learning.</span></h2>
-          </div>
-          <p>Explore areas of study listed in the UEI College marketing guide. Program availability varies by location.</p>
-        </div>
-        <div class="program-grid" id="program-card-list" aria-live="polite"></div>
-        <p class="program-empty" id="program-load-error" role="status" hidden></p>
-      </section>
-
-      <section class="learning-section" aria-labelledby="learning-heading">
-        <div class="learning-art" aria-hidden="true">
-          <div class="art-sun"></div>
-          <div class="art-building">
-            <div class="art-roof"></div>
-            <div class="art-sign"><span></span><span></span><span></span></div>
-            <div class="art-windows"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="art-base"></div>
-          </div>
-          <div class="art-book"><span></span><span></span></div>
-          <div class="art-star">+</div>
-        </div>
-        <div class="learning-copy">
-          <p class="eyebrow">A practical approach</p>
-          <h2 id="learning-heading">Learn online. Practice on campus.</h2>
-          <p>UEI programs are taught in a hybrid learning format that combines online classes with in-person, hands-on training in on-campus labs two days a week.</p>
-          <ul class="learning-list">
-            <li><span class="check-mark" aria-hidden="true">✓</span><span>Daily support and guidance from faculty and staff</span></li>
-            <li><span class="check-mark" aria-hidden="true">✓</span><span>Tutoring options when extra help is needed</span></li>
-            <li><span class="check-mark" aria-hidden="true">✓</span><span>Day and evening classes available</span></li>
-          </ul>
-          <a class="text-link" href="#inquiry-form">Explore campus programs <span aria-hidden="true">→</span></a>
-        </div>
-      </section>
-
-      <section class="support-section" aria-labelledby="support-heading">
-        <div class="support-inner">
-          <div class="support-heading">
-            <p class="eyebrow eyebrow-light">Support for your next step</p>
-            <h2 id="support-heading">Education should fit into your life.</h2>
-            <p>UEI faculty and staff are committed to helping you build a life and a future you can be proud of.</p>
-          </div>
-          <div class="support-grid">
-            <article class="support-card">
-              <span class="support-index">01</span>
-              <h3>Personal guidance</h3>
-              <p>Get daily support from faculty and staff, with tutoring options when you need extra help.</p>
-            </article>
-            <article class="support-card">
-              <span class="support-index">02</span>
-              <h3>Career services</h3>
-              <p>Career services can help with resume development, interview skills, and career placement assistance with local employers.**</p>
-            </article>
-            <article class="support-card">
-              <span class="support-index">03</span>
-              <h3>Payment guidance</h3>
-              <p>Financial aid representatives can help you explore your payment options. Financial aid is available for those who qualify.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="outcomes-section" aria-labelledby="outcomes-heading">
-        <div class="outcomes-inner">
-          <div>
-            <p class="eyebrow">Start with a conversation</p>
-            <h2 id="outcomes-heading">Explore training for an entry-level career.</h2>
-            <p>Career preparation varies by program. Learn more about campus options and the programs available at each location.</p>
-          </div>
-          <a class="button button-bright" href="#inquiry-form">Choose a campus <span aria-hidden="true">→</span></a>
-        </div>
-      </section>
-
-      <section class="disclosures-section" id="program-disclosures" aria-labelledby="disclosures-heading">
-        <div class="disclosure-inner">
-          <h2 id="disclosures-heading">Program information</h2>
-          <p>Prepare for a career and earn a diploma in as few as 10 months.* Financial aid is available for those who qualify. Career placement assistance is available.**</p>
-          <p class="disclosure-copy">All programs not available at all campus locations. *Length varies by program. **UEI does not promise or guarantee employment to any student or graduate. Some entry-level jobs may require additional background checks, drug screenings, and/or licensure requirements. Additional information is available at campus career service departments.</p>
-          <p class="disclosure-copy">UEI College is an equal opportunity employer and program. See the <a href="https://www.uei.edu/statementofnondiscrimination" target="_blank" rel="noopener noreferrer">Statement of Non-Discrimination</a>. Auxiliary aids and services are available upon request to individuals with disabilities by calling 711 or 1-800-735-2922.</p>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="footer-top">
-        <a class="footer-logo" href="/" aria-label="UEI College">
-          <img src="/image/uei-college-horizontal.jpg" alt="UEI College">
-        </a>
-        <div class="footer-links">
-          <a href="https://www.uei.edu/privacy-policy-terms/" target="_blank" rel="noopener noreferrer">Privacy Policy and Terms</a>
-          <a href="https://www.uei.edu/statementofnondiscrimination" target="_blank" rel="noopener noreferrer">Non-Discrimination</a>
+                <div class="field">
+                  <label for="lastName">Last name</label>
+                  <input id="lastName" name="lastName" type="text" autocomplete="family-name" maxlength="60" required>
+                  <p class="error" data-error="lastName" hidden></p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+                <p class="error" data-error="email" hidden></p>
+              </div>
+              <div class="field">
+                <label for="phone">Phone</label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="20" required>
+                <p class="error" data-error="phone" hidden></p>
+              </div>
+              <div class="field">
+                <label for="startDate">When would you like to start?</label>
+                <select id="startDate" name="startDate" required>
+                  <option value="">Select one</option>
+                </select>
+                <p class="error" data-error="startDate" hidden></p>
+              </div>
+              <div class="field consent">
+                <input type="checkbox" id="leadid_tcpa_disclosure" name="lead_consent[tcpa_consent]" value="Y" required>
+                <label for="leadid_tcpa_disclosure">By checking this box, I provide my express written consent for UEI College and its representatives to contact me by phone, text message, and email, including with automated technology and prerecorded or artificial voices, at the number and email address I provided, about educational programs. I understand that consent is not a condition of enrollment or of any purchase, that message and data rates may apply, and that I can revoke consent at any time.</label>
+                <p class="error" data-error="consent" hidden></p>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" data-back>Back</button>
+                <button type="submit" class="btn btn-cta" id="submit-button">Request Information</button>
+              </div>
+            </fieldset>
+          </form>
         </div>
       </div>
-      <div class="footer-bottom">
-        <span>© 2026 UEI College. All rights reserved.</span>
-        <span>Powered by <a href="https://www.back2learn.com/" target="_blank" rel="noopener noreferrer">Back2Learn</a>, Inc.</span>
+    </section>
+
+    <section class="programs" id="programs">
+      <div class="container">
+        <h2>Programs</h2>
+        <p class="section-sub">Program availability varies by campus.</p>
+        <div id="program-cards" class="card-grid"></div>
       </div>
-    </footer>
-  </body>
+    </section>
+
+    <section class="why">
+      <div class="container">
+        <h2>Why UEI College</h2>
+        <div class="card-grid three">
+          <article class="info-card"><h3>Hybrid learning</h3><p>Take classes online and complete hands-on labs on campus two days a week.</p></article>
+          <article class="info-card"><h3>Built around your schedule</h3><p>Day and evening classes are available to help you balance school with the rest of your life.</p></article>
+          <article class="info-card"><h3>Support when you need it</h3><p>Tutoring and daily faculty support help you stay on track.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container">
+        <h2>Ready to take the next step?</h2>
+        <a class="btn btn-cta" href="#apply">Request Information</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>All programs not available at all campus locations. *Length varies by program. **UEI does not promise or guarantee employment. Some entry-level jobs may require additional background checks, drug screenings, and/or licensure requirements. Additional information is available at campus career service departments. Financial aid is available for those who qualify.</p>
+      <p>UEI College is an equal opportunity employer and program. See the Statement of Non-Discrimination. Auxiliary aids and services are available upon request to individuals with disabilities by calling 711 or 1-800-735-2922.</p>
+      <p class="copyright">&copy; 2026 UEI College. Powered by Back2Learn, Inc.</p>
+    </div>
+  </footer>
+
+  <script src="/js/runtime-config.js"></script>
+  <script src="/js/campus-choices.js"></script>
+  <script src="/js/phone.js"></script>
+  <script src="/js/address.js"></script>
+  <script src="/js/rules.js"></script>
+  <script src="/js/catalog.js"></script>
+  <script src="/js/meta-pixel.js"></script>
+  <script src="/js/form.js"></script>
+
+  <noscript><img height="1" width="1" alt=""   src="https://create.leadid.com/noscript.gif?lac=BF9BD9BD-7047-FC9E-049D-F19BEA4231AA&amp;lck=0acacf7c-5b02-c01b-61cd-3ded286da6ec&amp;snippet_version=2"></noscript>
+    <script id="LeadiDscript" type="text/javascript">
+    (function () {
+      var s = document.createElement('script');
+      s.id = 'LeadiDscript_campaign';
+      s.type = 'text/javascript';
+      s.async = true;
+      s.src = 'https://create.lidstatic.com/campaign/0acacf7c-5b02-c01b-61cd-3ded286da6ec.js?snippet_version=2';
+      var LeadiDscript = document.getElementById('LeadiDscript');
+      if (LeadiDscript) LeadiDscript.parentNode.insertBefore(s, LeadiDscript);
+      else document.body.appendChild(s);
+    })();
+  </script>
+</body>
 </html>

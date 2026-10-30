@@ -6,10 +6,15 @@
 [functions]
   node_bundler = "esbuild"
 
-[functions."submit-lead"]
-  included_files = ["netlify/data/uei-campus-programs.json"]
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    X-Frame-Options = "SAMEORIGIN"
 
 [[headers]]
-  for = "/data/uei-preview-campus-programs.json"
+  for = "/.netlify/functions/*"
   [headers.values]
     Cache-Control = "no-store"

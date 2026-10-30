@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   validateAvailability,
   getActiveCampuses,
@@ -145,6 +146,15 @@ test("production availability requires approved mappings for active options", ()
     ...available,
     campuses: [{ ...unmappedCampus, programs: available.campuses[0].programs }]
   }).some((error) => error.includes("requires a confirmed LeadHoop mapping")));
+});
+
+test("the browser public projection strips server-only mappings while preserving active production values", async () => {
+  const publicProjection = JSON.parse(await readFile(new URL("../src/data/uei-public-campus-programs.json", import.meta.url), "utf8"));
+  assert.equal(publicProjection.previewOnly, false);
+  assert.equal(publicProjection.publicProjection, true);
+  assert.equal(validateAvailability(publicProjection).length, 0);
+  assert.equal("leadHoopId" in publicProjection.campuses[0], false);
+  assert.equal("leadHoopId" in publicProjection.campuses[0].programs[0], false);
 });
 
 test("HTTP failure responses are not accepted even when the body claims success", () => {

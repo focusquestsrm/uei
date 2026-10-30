@@ -1,6 +1,8 @@
-# UEI Back2Learn campaign preview
+# UEI Back2Learn campaign rebuild
 
-This standalone UEI College landing page adapts the guided campaign experience of the authorized UMA Kayla reference. It is an interactive **review preview**, not a live lead form: the campus/program choices are provisional, completing the form sends no inquiry, and the server-side LeadHoop integration is disabled.
+This UEI project was rebuilt from the actual authorized UMA Kayla reference app in `focusquestsrm/uma-landing-page`, branch `fallon-duplicate`, pinned at `2076e82b2ad13fb5874a83a396bcb0a4db250f49`.
+
+The rebuild keeps the reference flow and field architecture, while adapting the UEI campaign data, disclosure language, local validation, and server-side guarding. The browser loads a sanitized public projection of the server-side production campus/program matrix instead of the earlier preview-only placeholder data, and the submit flow remains disabled unless the server configuration explicitly enables outbound posting.
 
 The page uses the supplied UEI TCPA disclosure, privacy-policy link, Open Sans, and IEC marketing palette, with program length, financial-aid, career-services, campus-availability, and employment qualifications displayed alongside relevant claims. It describes UEI's hybrid learning as online coursework combined with in-person hands-on training in campus labs; it does not describe the programs as fully online.
 

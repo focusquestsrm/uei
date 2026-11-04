@@ -25,6 +25,7 @@ if (!catalog.validatePublic(choices)) {
 const runtime = {
   metaPixelId: '1394019919533755',
   endpoint: '/.netlify/functions/submit-lead',
+  availabilityEndpoint: '/.netlify/functions/availability',
   thankYouPath: '/thank-you.html',
   availability: availableState
 };

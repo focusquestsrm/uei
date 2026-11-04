@@ -87,11 +87,14 @@ if (errors.length) {
   process.exit(1);
 }
 
+const effectiveNow = availability.effectiveAt(imported, new Date());
 const nextState = Object.assign({}, previousState, {
-  currentVersion: imported.id,
   pendingVersion: imported.id,
   versions: Array.isArray(previousState.versions) ? previousState.versions.concat(imported) : [imported]
 });
+if (effectiveNow) {
+  nextState.currentVersion = imported.id;
+}
 const previousRuntime = availability.resolveRuntime(baseConfig, previousState, new Date());
 const nextRuntime = availability.resolveRuntime(baseConfig, nextState, new Date());
 const diff = availability.diffRuntime(previousRuntime, nextRuntime);
@@ -99,7 +102,7 @@ printDiff(diff);
 
 if (APPLY) {
   fs.writeFileSync(availabilityPath, JSON.stringify(nextState, null, 2) + '\n', 'utf8');
-  console.log('Saved approved availability version: ' + imported.id);
+  console.log('Saved staged availability version: ' + imported.id + '. This local file is not runtime publication until the version is selected by effective date or an explicit runtime application step.');
   return;
 }
-console.log('Preview only. Add --apply to publish this version.');
+console.log('Preview only. Add --apply to stage this version in the approved local configuration.');

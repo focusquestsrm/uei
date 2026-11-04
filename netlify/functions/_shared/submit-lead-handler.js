@@ -9,6 +9,7 @@ const { classify } = require('./leadhoop-response');
 const deliveryWindow = require('./delivery-window');
 const { applyCapPause } = require('./cap-handling');
 const { resolveRuntime } = require('../../../src/js/availability');
+const { loadRuntimeAvailability, getRuntimeAvailabilityStore } = require('./runtime-availability');
 const { FORM_PATHS, LEADHOOP_ENDPOINT, MAX_BODY_LENGTH, MEDIA_TYPE, VENDOR_TIMEOUT_MS, readConfiguration, validClientIp } = require('./config');
 const {
   completeSubmission,
@@ -227,7 +228,9 @@ async function handleSubmission(event, options) {
     return reply(400, withDiagnostic('validation_error', 'E_INVALID_INPUT', 'We could not accept some of your information. Please review your answers and try again.'));
   }
 
-  const runtimeAvailability = settings.runtimeAvailability || (settings.state && settings.state.runtimeAvailability) || require('../../../config/availability.json');
+  const runtimeAvailability = settings.runtimeAvailability || (settings.state && settings.state.runtimeAvailability) || await loadRuntimeAvailability({
+    store: settings.store || getRuntimeAvailabilityStore()
+  });
   const checked = validate(body, configuration, runtimeAvailability);
   const fields = Object.keys(checked.errors);
   if (fields.length > 0) {

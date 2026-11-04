@@ -2,7 +2,7 @@
   'use strict';
 
   const runtime = window.UEI_RUNTIME_CONFIG || {};
-  const choices = window.UEI_CHOICES || { campuses: [] };
+  let choices = window.UEI_CHOICES || { campuses: [] };
   const rules = window.UEI_RULES;
   const address = window.UEI_ADDRESS;
   const phone = window.UEI_PHONE;
@@ -87,6 +87,7 @@
   function renderCards() {
     const container = document.getElementById('program-cards');
     if (!container) return;
+    container.innerHTML = '';
     const byProgram = new Map();
     choices.campuses.forEach(function (campus) {
       campus.programs.forEach(function (program) {
@@ -106,6 +107,45 @@
       card.appendChild(places);
       container.appendChild(card);
     });
+  }
+
+  function applyRuntimeChoices(payload) {
+    if (!payload || !Array.isArray(payload.campuses)) return;
+    window.UEI_RUNTIME_AVAILABILITY = payload;
+    choices = payload;
+    const selectedCampus = campusSelect.value;
+    const selectedProgram = programSelect.value;
+    campusSelect.innerHTML = '';
+    if (!choices.campuses.length) {
+      option(campusSelect, '', 'No campuses available');
+      campusSelect.disabled = true;
+      programSelect.innerHTML = '';
+      option(programSelect, '', 'No programs available');
+      programSelect.disabled = true;
+      renderCards();
+      return;
+    }
+    choices.campuses.forEach(function (campus) { option(campusSelect, campus.id, campus.name); });
+    campusSelect.disabled = false;
+    const validCampus = choices.campuses.some(function (campus) { return campus.id === selectedCampus; }) ? selectedCampus : '';
+    if (validCampus) campusSelect.value = validCampus; else campusSelect.value = '';
+    refreshPrograms();
+    if (selectedProgram && !Array.from(programSelect.options).some(function (option) { return option.value === selectedProgram; })) {
+      programSelect.value = '';
+    }
+    renderCards();
+  }
+
+  async function refreshRuntimeAvailability() {
+    const endpoint = runtime.availabilityEndpoint || '/.netlify/functions/availability';
+    try {
+      const response = await window.fetch(endpoint, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (payload && Array.isArray(payload.campuses)) applyRuntimeChoices(payload);
+    } catch (error) {
+      // The static build remains the fallback when the runtime state endpoint is unavailable.
+    }
   }
 
   function field(name) {
@@ -313,6 +353,7 @@
   populate();
   refreshPrograms();
   renderCards();
+  refreshRuntimeAvailability();
 
   campusSelect.addEventListener('change', function () {
     refreshPrograms();

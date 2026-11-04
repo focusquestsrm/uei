@@ -60,6 +60,22 @@ test('campaign gender default remains M even if a request supplies another value
   assert.equal(settings.fetch.calls[0].params.get('lead[gender]'), 'M');
 });
 
+test('submission reads the durable runtime state instead of silently falling back to the checked-in file', async () => {
+  const state = {
+    currentVersion: '2026-11',
+    versions: [{ id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-12-01T00:00:00-05:00', campuses: { bakersfield: false }, offerings: {} }],
+    manualPauses: { campuses: {}, offerings: {} },
+    capPauses: { campuses: {}, offerings: {} }
+  };
+  const store = memoryStore();
+  await store.setJSON('runtime-availability', state, { consistency: 'strong' });
+  const result = await handleSubmission(event(validBody()), { env: ENV, store, fetch: vendorFetch(SUCCESS), now: OPEN_NOW });
+  const json = JSON.parse(result.body);
+  assert.equal(result.statusCode, 400);
+  assert.equal(json.outcome, 'validation_error');
+  assert.equal(json.code, 'E_VALIDATION_FAILED');
+});
+
 test('blocked before reservation when not configured, origin wrong, or IP missing', async () => {
   let r = await run(validBody(), { env: Object.assign({}, ENV, { LEAD_SUBMISSION_ENABLED: 'false' }) });
   assert.equal(r.result.statusCode, 503);

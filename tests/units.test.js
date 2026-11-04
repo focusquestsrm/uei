@@ -1,11 +1,16 @@
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const phone = require('../src/js/phone');
 const address = require('../src/js/address');
 const rules = require('../src/js/rules');
 const catalog = require('../src/js/catalog');
+const runtimeAvailability = require('../netlify/functions/_shared/runtime-availability');
 const { classify } = require('../netlify/functions/_shared/leadhoop-response');
 const { readConfiguration } = require('../netlify/functions/_shared/config');
 const { campusConfig } = require('./helpers');
@@ -145,4 +150,111 @@ test('cap response detection pauses only the matching scope and ignores test lea
 
   const testNoop = capHandling.applyCapPause(offeringPause.runtimeState, 'bakersfield', 'dental-assistant', 'Reached campus cap', { testMode: true });
   assert.equal(testNoop.changed, false);
+});
+
+test('publishRuntimeAvailability preserves durable pauses and retries on conflict', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uei-runtime-'));
+  const storePath = path.join(tempDir, 'runtime.json');
+  const initialState = {
+    currentVersion: '2026-11',
+    pendingVersion: null,
+    versions: [{ id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-12-01T00:00:00-05:00', campuses: {}, offerings: {} }],
+    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/medical-assistant': false } },
+    capPauses: { campuses: { bakersfield: false }, offerings: {} }
+  };
+  fs.writeFileSync(storePath, JSON.stringify({ __meta__: { etag: 'initial', updatedAt: new Date().toISOString() }, data: initialState }, null, 2) + '\n', 'utf8');
+
+  let attempts = 0;
+  const store = {
+    async getWithMetadata(key) {
+      if (key !== 'runtime-availability') return null;
+      const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+      return { data: raw.data, etag: raw.__meta__.etag };
+    },
+    async setJSON(key, value, options) {
+      const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+      if (options && options.onlyIfMatch && raw.__meta__.etag !== options.onlyIfMatch) {
+        return { modified: false, etag: raw.__meta__.etag };
+      }
+      if (attempts === 0) {
+        attempts += 1;
+        return { modified: false, etag: raw.__meta__.etag };
+      }
+      const nextEtag = 'etag-' + Date.now();
+      fs.writeFileSync(storePath, JSON.stringify({ __meta__: { etag: nextEtag, updatedAt: new Date().toISOString() }, data: value }, null, 2) + '\n', 'utf8');
+      return { modified: true, etag: nextEtag };
+    }
+  };
+
+  const imported = { id: '2026-12', effectiveDate: '2026-12-01T00:00:00-05:00', expiresAt: '2027-01-01T00:00:00-05:00', campuses: { ontario: true }, offerings: {} };
+  const result = await runtimeAvailability.publishRuntimeAvailability({
+    currentVersion: '2026-11',
+    pendingVersion: '2026-12',
+    versions: [initialState.versions[0], imported],
+    manualPauses: { campuses: { oceanside: true }, offerings: {} },
+    capPauses: { campuses: { bakersfield: true }, offerings: {} }
+  }, { store, maxAttempts: 5 });
+
+  assert.equal(result.status, 'ok');
+  const durable = JSON.parse(fs.readFileSync(storePath, 'utf8')).data;
+  assert.equal(durable.manualPauses.campuses.oceanside, false);
+  assert.equal(durable.capPauses.campuses.bakersfield, false);
+  assert.equal(durable.pendingVersion, '2026-12');
+});
+
+test('malformed stored runtime data is rejected and expired or future versions stay inactive', async () => {
+  const broken = {
+    async getWithMetadata() {
+      return { data: '{not valid json', etag: 'bad' };
+    }
+  };
+  const notValid = await runtimeAvailability.loadRuntimeAvailability({ store: broken, allowFileFallback: false });
+  assert.equal(notValid.status, 'storage_error');
+
+  const futureState = {
+    currentVersion: '2099-01',
+    pendingVersion: null,
+    versions: [{ id: '2099-01', effectiveDate: '2099-01-01T00:00:00-05:00', expiresAt: '2099-02-01T00:00:00-05:00', campuses: {}, offerings: {} }],
+    manualPauses: { campuses: {}, offerings: {} },
+    capPauses: { campuses: {}, offerings: {} }
+  };
+  const futureRuntime = availability.resolveRuntime(campusConfig, futureState, new Date('2026-11-04T12:00:00-05:00'));
+  assert.equal(futureRuntime.currentVersion, null);
+
+  const expired = { versions: [{ id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-11-02T00:00:00-05:00', campuses: {}, offerings: {} }] };
+  assert.equal(availability.effectiveAt(expired.versions[0], new Date('2026-11-05T12:00:00-05:00')), null);
+});
+
+test('import CLI publishes the intended version to an isolated mock store', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uei-import-'));
+  const storePath = path.join(tempDir, 'runtime-store.json');
+  const importFile = path.join(tempDir, 'approved-version.json');
+
+  fs.writeFileSync(importFile, JSON.stringify({
+    id: '2027-01',
+    effectiveDate: '2027-01-01T00:00:00-05:00',
+    expiresAt: '2027-02-01T00:00:00-05:00',
+    campuses: {},
+    offerings: {}
+  }, null, 2) + '\n', 'utf8');
+
+  const initialState = {
+    currentVersion: '2026-11',
+    pendingVersion: null,
+    versions: [{ id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-12-01T00:00:00-05:00', campuses: {}, offerings: {} }],
+    manualPauses: { campuses: { oceanside: false }, offerings: {} },
+    capPauses: { campuses: {}, offerings: {} }
+  };
+  fs.writeFileSync(storePath, JSON.stringify({ __meta__: { etag: 'seed', updatedAt: new Date().toISOString() }, data: initialState }, null, 2) + '\n', 'utf8');
+
+  const result = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'import-availability.js'), '--file', importFile, '--publish', '--target', storePath], {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const persisted = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+  assert.equal(persisted.data.pendingVersion, '2027-01');
+  assert.equal(persisted.data.manualPauses.campuses.oceanside, false);
+  assert.equal(persisted.data.capPauses.campuses.bakersfield, undefined);
 });

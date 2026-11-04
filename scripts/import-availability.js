@@ -166,13 +166,16 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    const published = await runtimeAvailability.publishRuntimeAvailability({
-      currentVersion: effectiveNow ? imported.id : previousState.currentVersion || null,
+    const durable = await runtimeAvailability.loadRuntimeAvailability({ store, allowFileFallback: false });
+    const baseState = durable.status === 'ok' ? durable.state : { currentVersion: null, pendingVersion: null, versions: [], manualPauses: { campuses: {}, offerings: {} }, capPauses: { campuses: {}, offerings: {} } };
+    const candidate = {
+      currentVersion: effectiveNow ? imported.id : (baseState.currentVersion || null),
       pendingVersion: imported.id,
-      versions: [imported],
-      manualPauses: previousState.manualPauses || { campuses: {}, offerings: {} },
-      capPauses: previousState.capPauses || { campuses: {}, offerings: {} }
-    }, { store, maxAttempts: 5 });
+      versions: Array.isArray(baseState.versions) ? baseState.versions.concat(imported) : [imported],
+      manualPauses: baseState.manualPauses || { campuses: {}, offerings: {} },
+      capPauses: baseState.capPauses || { campuses: {}, offerings: {} }
+    };
+    const published = await runtimeAvailability.publishRuntimeAvailability(candidate, { store, maxAttempts: 5 });
     if (published.status !== 'ok') {
       console.error('Runtime publish failed: ' + (published.error || 'unknown error'));
       process.exitCode = 1;

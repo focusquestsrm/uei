@@ -17,22 +17,60 @@ const EMPTY_STATE = Object.freeze({
 let storeFactory = function () { throw new Error('Blob store runtime is not configured'); };
 let testStoreFactoryInstalled = false;
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isValidDateString(value) {
+  if (value === null || value === undefined || value === '') return true;
+  if (typeof value !== 'string') return false;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime());
+}
+
 function normalizeState(value) {
-  const source = value && typeof value === 'object' ? value : {};
+  const source = isPlainObject(value) ? value : {};
   const versions = Array.isArray(source.versions) ? source.versions.filter(function (entry) { return entry && typeof entry === 'object'; }) : [];
   return {
-    currentVersion: source.currentVersion || null,
-    pendingVersion: source.pendingVersion || null,
-    versions: versions,
+    currentVersion: source.currentVersion && typeof source.currentVersion === 'string' ? source.currentVersion : null,
+    pendingVersion: source.pendingVersion && typeof source.pendingVersion === 'string' ? source.pendingVersion : null,
+    versions: versions.map(function (entry) {
+      const version = isPlainObject(entry) ? entry : {};
+      return {
+        id: version.id && typeof version.id === 'string' ? version.id : '',
+        effectiveDate: isValidDateString(version.effectiveDate) ? version.effectiveDate : null,
+        expiresAt: isValidDateString(version.expiresAt) ? version.expiresAt : null,
+        campuses: isPlainObject(version.campuses) ? Object.assign({}, version.campuses) : {},
+        offerings: isPlainObject(version.offerings) ? Object.assign({}, version.offerings) : {}
+      };
+    }),
     manualPauses: {
-      campuses: source.manualPauses && source.manualPauses.campuses && typeof source.manualPauses.campuses === 'object' ? source.manualPauses.campuses : {},
-      offerings: source.manualPauses && source.manualPauses.offerings && typeof source.manualPauses.offerings === 'object' ? source.manualPauses.offerings : {}
+      campuses: isPlainObject(source.manualPauses) && isPlainObject(source.manualPauses.campuses) ? Object.assign({}, source.manualPauses.campuses) : {},
+      offerings: isPlainObject(source.manualPauses) && isPlainObject(source.manualPauses.offerings) ? Object.assign({}, source.manualPauses.offerings) : {}
     },
     capPauses: {
-      campuses: source.capPauses && source.capPauses.campuses && typeof source.capPauses.campuses === 'object' ? source.capPauses.campuses : {},
-      offerings: source.capPauses && source.capPauses.offerings && typeof source.capPauses.offerings === 'object' ? source.capPauses.offerings : {}
+      campuses: isPlainObject(source.capPauses) && isPlainObject(source.capPauses.campuses) ? Object.assign({}, source.capPauses.campuses) : {},
+      offerings: isPlainObject(source.capPauses) && isPlainObject(source.capPauses.offerings) ? Object.assign({}, source.capPauses.offerings) : {}
     }
   };
+}
+
+function validateRuntimeStateShape(value) {
+  if (!isPlainObject(value)) return false;
+  if (value.currentVersion !== null && value.currentVersion !== undefined && typeof value.currentVersion !== 'string') return false;
+  if (value.pendingVersion !== null && value.pendingVersion !== undefined && typeof value.pendingVersion !== 'string') return false;
+  if (!Array.isArray(value.versions)) return false;
+  for (const entry of value.versions) {
+    if (!isPlainObject(entry)) return false;
+    if (!entry.id || typeof entry.id !== 'string' || !String(entry.id).trim()) return false;
+    if (entry.effectiveDate !== undefined && entry.effectiveDate !== null && !isValidDateString(entry.effectiveDate)) return false;
+    if (entry.expiresAt !== undefined && entry.expiresAt !== null && !isValidDateString(entry.expiresAt)) return false;
+    if (entry.campuses !== undefined && !isPlainObject(entry.campuses)) return false;
+    if (entry.offerings !== undefined && !isPlainObject(entry.offerings)) return false;
+  }
+  if (value.manualPauses !== undefined && (!isPlainObject(value.manualPauses) || !isPlainObject(value.manualPauses.campuses) || !isPlainObject(value.manualPauses.offerings))) return false;
+  if (value.capPauses !== undefined && (!isPlainObject(value.capPauses) || !isPlainObject(value.capPauses.campuses) || !isPlainObject(value.capPauses.offerings))) return false;
+  return true;
 }
 
 function deserializeStoredState(value) {
@@ -100,14 +138,11 @@ function readFileState() {
   }
 }
 
-function canUseFileFallback(settings) {
+function canUseFileFallback(settings, storeWasConfigured) {
   if (settings && settings.allowFileFallback === false) return false;
-  try {
-    getRuntimeAvailabilityStore();
-    return false;
-  } catch (error) {
-    return true;
-  }
+  if (settings && settings.allowFileFallback === true) return true;
+  if (settings && settings.store && settings.store.data instanceof Map) return true;
+  return !storeWasConfigured;
 }
 
 function isMutatingFailure(error) {
@@ -121,7 +156,7 @@ async function loadRuntimeAvailability(options) {
     try {
       store = getRuntimeAvailabilityStore();
     } catch (error) {
-      if (canUseFileFallback(settings)) {
+      if (canUseFileFallback(settings, false)) {
         return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
       }
       return { status: 'missing', state: EMPTY_STATE, etag: null, error: 'No runtime availability store is configured.' };
@@ -133,14 +168,14 @@ async function loadRuntimeAvailability(options) {
     try {
       const result = await store.getWithMetadata(STORE_KEY);
       if (!result || result.data === undefined || result.data === null) {
-        if (canUseFileFallback(settings)) {
+        if (canUseFileFallback(settings, true)) {
           return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
         }
         return { status: 'missing', state: EMPTY_STATE, etag: null, error: 'Runtime availability has not been initialized in durable storage.' };
       }
       const parsed = deserializeStoredState(result.data);
-      if (!parsed || typeof parsed !== 'object') {
-        return { status: 'storage_error', state: EMPTY_STATE, etag: result.etag || null, error: 'Stored runtime availability is invalid JSON.' };
+      if (!parsed || !validateRuntimeStateShape(parsed)) {
+        return { status: 'storage_error', state: EMPTY_STATE, etag: result.etag || null, error: 'Stored runtime availability is malformed JSON or a non-runtime object.' };
       }
       return { status: 'ok', state: normalizeState(parsed), etag: result.etag || null, error: null };
     } catch (error) {
@@ -152,14 +187,14 @@ async function loadRuntimeAvailability(options) {
     try {
       const result = await store.get(STORE_KEY, { type: 'json', consistency: 'strong' });
       if (result === undefined || result === null) {
-        if (canUseFileFallback(settings)) {
+        if (canUseFileFallback(settings, true)) {
           return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
         }
         return { status: 'missing', state: EMPTY_STATE, etag: null, error: 'Runtime availability has not been initialized in durable storage.' };
       }
       const parsed = deserializeStoredState(result);
-      if (!parsed || typeof parsed !== 'object') {
-        return { status: 'storage_error', state: EMPTY_STATE, etag: null, error: 'Stored runtime availability is invalid JSON.' };
+      if (!parsed || !validateRuntimeStateShape(parsed)) {
+        return { status: 'storage_error', state: EMPTY_STATE, etag: null, error: 'Stored runtime availability is malformed JSON or a non-runtime object.' };
       }
       return { status: 'ok', state: normalizeState(parsed), etag: null, error: null };
     } catch (error) {
@@ -167,7 +202,7 @@ async function loadRuntimeAvailability(options) {
     }
   }
 
-  if (canUseFileFallback(settings)) {
+  if (canUseFileFallback(settings, true)) {
     return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
   }
 
@@ -198,13 +233,41 @@ async function writeRuntimeAvailability(runtimeState, options) {
   }
 }
 
+function buildPublicationCandidate(currentState, desiredState) {
+  const current = normalizeState(currentState || EMPTY_STATE);
+  const desired = normalizeState(desiredState || EMPTY_STATE);
+  const mergedVersions = [];
+  const seen = new Set();
+  [current.versions, desired.versions].forEach(function (versions) {
+    (Array.isArray(versions) ? versions : []).forEach(function (version) {
+      if (!version || !version.id || seen.has(version.id)) return;
+      seen.add(version.id);
+      mergedVersions.push({
+        id: version.id,
+        effectiveDate: version.effectiveDate || null,
+        expiresAt: version.expiresAt || null,
+        campuses: Object.assign({}, version.campuses || {}),
+        offerings: Object.assign({}, version.offerings || {})
+      });
+    });
+  });
+
+  return normalizeState({
+    currentVersion: desired.currentVersion || current.currentVersion || null,
+    pendingVersion: desired.pendingVersion || current.pendingVersion || null,
+    versions: mergedVersions,
+    manualPauses: Object.assign({}, current.manualPauses || { campuses: {}, offerings: {} }),
+    capPauses: Object.assign({}, current.capPauses || { campuses: {}, offerings: {} })
+  });
+}
+
 async function publishRuntimeAvailability(runtimeState, options) {
   const settings = options || {};
   const store = settings.store || getRuntimeAvailabilityStore();
   const maxAttempts = settings.maxAttempts || 3;
   const desiredState = normalizeState(runtimeState || EMPTY_STATE);
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const latest = await loadRuntimeAvailability({ store });
+    const latest = await loadRuntimeAvailability({ store, allowFileFallback: false });
     if (latest.status === 'storage_error') return { status: 'storage_error', state: desiredState, modified: false, etag: null, error: latest.error };
     if (latest.status === 'missing') {
       const result = await writeRuntimeAvailability(desiredState, { store, onlyIfNew: true });
@@ -212,10 +275,12 @@ async function publishRuntimeAvailability(runtimeState, options) {
       if (result.status === 'conflict' && attempt < maxAttempts - 1) continue;
       return result;
     }
-    const candidate = mergeRuntimeState(latest.state, desiredState);
+    const candidate = buildPublicationCandidate(latest.state, desiredState);
     const result = await writeRuntimeAvailability(candidate, { store, ifMatch: latest.etag || undefined });
     if (result.status === 'ok') return result;
-    if (result.status === 'conflict' && attempt < maxAttempts - 1) continue;
+    if (result.status === 'conflict' && attempt < maxAttempts - 1) {
+      continue;
+    }
     return result;
   }
   return { status: 'conflict', state: normalizeState(desiredState), modified: false, etag: null, error: 'Conflict retries were exhausted.' };

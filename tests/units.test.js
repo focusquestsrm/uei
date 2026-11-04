@@ -106,3 +106,43 @@ test('configuration gates posting', () => {
   assert.equal(readConfiguration(Object.assign({}, base, { SITE_URL: 'http://evil.test' })).ready, false);
   assert.equal(readConfiguration(Object.assign({}, base, { LEADHOOP_CAMPAIGN_CODE: '' })).ready, false);
 });
+
+const availability = require('../src/js/availability');
+const capHandling = require('../netlify/functions/_shared/cap-handling');
+
+test('scheduled availability chooses the active version and honors manual pause precedence', () => {
+  const state = {
+    currentVersion: '2026-11',
+    versions: [
+      { id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-12-01T00:00:00-05:00', campuses: { oceanside: false }, offerings: { 'oceanside/hvac': false } },
+      { id: '2026-12', effectiveDate: '2026-12-01T00:00:00-05:00', campuses: { }, offerings: { } }
+    ],
+    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/medical-assistant': false } },
+    capPauses: { campuses: {}, offerings: {} }
+  };
+  const runtime = availability.resolveRuntime(campusConfig, state, new Date('2026-11-05T12:00:00-05:00'));
+  assert.equal(runtime.currentVersion, '2026-11');
+  assert.equal(runtime.campuses.oceanside.active, false);
+  assert.equal(runtime.offerings['oceanside/hvac'].active, false);
+  assert.equal(runtime.offerings['gardena/medical-assistant'].active, false);
+});
+
+test('cap response detection pauses only the matching scope and ignores test leads', () => {
+  const baseState = { currentVersion: '2026-11', manualPauses: { campuses: {}, offerings: {} }, capPauses: { campuses: {}, offerings: {} }, versions: [] };
+  const campusPause = capHandling.applyCapPause(baseState, 'bakersfield', 'dental-assistant', 'Reached campus cap for Bakersfield.', { testMode: false });
+  assert.equal(campusPause.changed, true);
+  assert.equal(campusPause.scope, 'campus');
+  assert.equal(campusPause.runtimeState.capPauses.campuses.bakersfield, false);
+
+  const offeringPause = capHandling.applyCapPause(campusPause.runtimeState, 'gardena', 'medical-assistant', 'Reached campus/program cap for Gardena Medical Assistant.', { testMode: false });
+  assert.equal(offeringPause.changed, true);
+  assert.equal(offeringPause.scope, 'campus-program');
+  assert.equal(offeringPause.runtimeState.capPauses.offerings['gardena/medical-assistant'], false);
+
+  const campaignPause = capHandling.applyCapPause(offeringPause.runtimeState, 'bakersfield', 'dental-assistant', 'Reached campaign/offer cap for x', { testMode: false });
+  assert.equal(campaignPause.changed, false);
+  assert.equal(campaignPause.scope, 'campaign');
+
+  const testNoop = capHandling.applyCapPause(offeringPause.runtimeState, 'bakersfield', 'dental-assistant', 'Reached campus cap', { testMode: true });
+  assert.equal(testNoop.changed, false);
+});

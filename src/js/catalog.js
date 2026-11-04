@@ -7,6 +7,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   'use strict';
 
+  const availability = typeof require === 'function' ? require('./availability') : (typeof window !== 'undefined' ? window.UEI_AVAILABILITY : null);
   const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   const NUMERIC = /^\d{1,12}$/;
 
@@ -66,25 +67,39 @@
     return typeof zip === 'string' && campus.zips.indexOf(zip) !== -1;
   }
 
+  function runtimeState(config, runtimeAvailability) {
+    const state = runtimeAvailability || (typeof window !== 'undefined' ? window.UEI_RUNTIME_AVAILABILITY : null) || { campuses: {}, offerings: {} };
+    if (availability && typeof availability.resolveRuntime === 'function') {
+      return availability.resolveRuntime(config, state);
+    }
+    return { campuses: {}, offerings: {} };
+  }
+
   // Authoritative server-side resolution. A campus/program pair is only usable when the campus,
   // the offering, and the ZIP all qualify at the time of the request.
-  function resolveSelection(config, campusId, programId, zip) {
+  function resolveSelection(config, campusId, programId, zip, runtimeAvailability) {
     const campus = config.campuses.find(function (entry) { return entry.id === campusId; });
     const program = config.programs.find(function (entry) { return entry.id === programId; });
     const offering = campus && program ? findOffering(config, campus.id, program.id) : null;
     if (!campus || !program || !offering) return { ok: false, reason: 'unknown' };
-    if (!campus.active || !offering.active) return { ok: false, reason: 'paused' };
+    const effective = runtimeState(config, runtimeAvailability);
+    const campusState = effective.campuses[campus.id] || { active: campus.active };
+    const offeringState = effective.offerings[campus.id + '/' + program.id] || { active: offering.active };
+    if (!campusState.active || !offeringState.active) return { ok: false, reason: 'paused' };
     if (!zipEligible(campus, zip)) return { ok: false, reason: 'zip' };
     return { ok: true, campus, program };
   }
 
   // Sanitized browser projection: only active choices, no routing IDs, no pause metadata.
-  function buildPublic(config) {
+  function buildPublic(config, runtimeAvailability) {
     const programs = config.programs.slice().sort(byOrder);
+    const effective = runtimeState(config, runtimeAvailability);
     const campuses = config.campuses.slice().sort(byOrder).map(function (campus) {
-      const offered = campus.active ? programs.filter(function (program) {
+      const campusState = effective.campuses[campus.id] || { active: campus.active };
+      const offered = campusState.active ? programs.filter(function (program) {
         const offering = findOffering(config, campus.id, program.id);
-        return offering && offering.active;
+        const offeringState = effective.offerings[campus.id + '/' + program.id] || { active: offering && offering.active };
+        return offering && offeringState.active;
       }) : [];
       return {
         id: campus.id,

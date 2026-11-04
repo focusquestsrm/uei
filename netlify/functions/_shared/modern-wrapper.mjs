@@ -1,8 +1,10 @@
 import { getStore } from '@netlify/blobs';
 import idempotency from './submission-idempotency.js';
+import availabilityStore from './runtime-availability.js';
 import handlerModule from './submit-lead-handler.js';
 
 idempotency.configureNetlifyStore(getStore);
+availabilityStore.configureNetlifyStore(getStore);
 
 // The client address comes only from the platform; request bodies and spoofable
 // forwarding headers are never trusted. No address means no post.
@@ -14,6 +16,12 @@ export async function handleRequest(request, context, overrides) {
     headers: Object.fromEntries(request.headers.entries()),
     body,
     clientIp
-  }, Object.assign({ requestId: context && context.requestId }, overrides));
+  }, Object.assign({
+    requestId: context && context.requestId,
+    persistRuntimeAvailability: async function (state) {
+      const store = availabilityStore.getRuntimeAvailabilityStore();
+      await store.setJSON('runtime-availability', state, { consistency: 'strong' });
+    }
+  }, overrides));
   return new Response(result.body || '', { status: result.statusCode || 500, headers: result.headers || {} });
 }

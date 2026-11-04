@@ -9,9 +9,10 @@ commit `2076e82b2ad13fb5874a83a396bcb0a4db250f49`), changed to UEI's campus-depe
 | Command | Purpose |
 | --- | --- |
 | `npm install` | Install dependencies |
-| `npm run build` | Generate `src/js/runtime-config.js` and `src/js/campus-choices.js` (both git-ignored) from `config/campus-programs.json` |
+| `npm run build` | Generate `src/js/runtime-config.js`, `src/js/runtime-availability.js`, and `src/js/campus-choices.js` from `config/campus-programs.json` and `config/availability.json` |
 | `npm test` | Build, then unit and handler tests (`node --test`, vendor `fetch` is always mocked) |
 | `npm run check:browser` | Desktop and mobile browser flow against a local server; all external hosts are blocked or stubbed; screenshots go to `checks/output/` |
+| `node scripts/import-availability.js --file path/to/monthly-availability.json --apply` | Preview or publish a validated monthly availability version; without `--apply` it only prints the diff |
 
 ## Netlify environment variables
 
@@ -46,6 +47,26 @@ No authorization token or FPI is required by the UEI spec. Nothing secret is sen
 | South University `submit-lead.js` / `function2.js` @ `2701d70` | `src/js/address.js` (format checks only, no existence claims) |
 
 Intentionally not carried over: Google Places, program availability/cap admin functions, scheduled reset, TrustedForm, `campaign_id`/`meta_event_id` forwarding.
+
+## Scheduled monthly availability and cap handling
+
+- `config/availability.json` stores the current and staged availability versions, manual pauses, and cap pauses without consumer data. The runtime automatically selects the most recent version whose `effectiveDate` is in the past and whose `expiresAt` is still in the future.
+- `scripts/import-availability.js` validates an imported `.json` or `.csv` file, prints the campus/offerings that would open or close, and refuses malformed data without replacing the last valid version unless `--apply` is present.
+- The version schema is a JSON object with `id`, `effectiveDate`, `expiresAt`, `campuses`, and `offerings`. A campus override can be `true` or `false`, and an offering entry uses the key `campusId/programId`.
+- Manual pauses override scheduled reopening. A cap response only pauses the matching scope: a campus cap pauses that campus, a campus/program cap pauses only the matching offering, and a campaign/offer cap is treated as broader and not converted into a single-campus pause.
+- If no approved next-month list is received, the app keeps the last valid version active and leaves `pendingVersion` unset until a valid import is published.
+
+Example JSON:
+
+```json
+{
+  "id": "2026-12",
+  "effectiveDate": "2026-12-01T00:00:00-05:00",
+  "expiresAt": "2027-01-01T00:00:00-05:00",
+  "campuses": { "oceanside": false },
+  "offerings": { "gardena/medical-assistant": false }
+}
+```
 
 ## Posting behavior
 

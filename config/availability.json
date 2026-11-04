@@ -1,0 +1,26 @@
+{
+  "_comment": "Approved version schedule for UEI Back2Learn runtime availability. Versions shown here are safe defaults and are not consumer data.",
+  "currentVersion": "2026-11",
+  "pendingVersion": null,
+  "versions": [
+    {
+      "id": "2026-11",
+      "effectiveDate": "2026-11-01T00:00:00-05:00",
+      "expiresAt": "2026-12-01T00:00:00-05:00",
+      "campuses": {},
+      "offerings": {}
+    }
+  ],
+  "manualPauses": {
+    "campuses": {
+      "oceanside": false
+    },
+    "offerings": {
+      "gardena/medical-assistant": false
+    }
+  },
+  "capPauses": {
+    "campuses": {},
+    "offerings": {}
+  }
+}

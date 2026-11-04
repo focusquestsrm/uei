@@ -7,6 +7,8 @@ const rules = require('../../../src/js/rules');
 const campusConfig = require('../../../config/campus-programs.json');
 const { classify } = require('./leadhoop-response');
 const deliveryWindow = require('./delivery-window');
+const { applyCapPause } = require('./cap-handling');
+const { resolveRuntime } = require('../../../src/js/availability');
 const { FORM_PATHS, LEADHOOP_ENDPOINT, MAX_BODY_LENGTH, MEDIA_TYPE, VENDOR_TIMEOUT_MS, readConfiguration, validClientIp } = require('./config');
 const {
   completeSubmission,
@@ -55,7 +57,7 @@ function consentUrl(value, origin) {
 }
 
 // Returns { errors, value } where value holds normalized, validated fields.
-function validate(body, configuration) {
+function validate(body, configuration, runtimeAvailability) {
   const errors = {};
   const check = function (name, ok) { if (!ok) errors[name] = true; };
   const value = {};
@@ -100,7 +102,7 @@ function validate(body, configuration) {
   value.leadId = str(body.leadIdToken);
   check('leadIdToken', rules.isValidLeadIdToken(value.leadId));
 
-  const selection = catalogModule.resolveSelection(campusConfig, str(body.campus), str(body.program), value.zip);
+  const selection = catalogModule.resolveSelection(campusConfig, str(body.campus), str(body.program), value.zip, runtimeAvailability);
   if (!selection.ok) {
     errors[selection.reason === 'zip' ? 'zip' : 'selection'] = true;
   } else {
@@ -225,7 +227,8 @@ async function handleSubmission(event, options) {
     return reply(400, withDiagnostic('validation_error', 'E_INVALID_INPUT', 'We could not accept some of your information. Please review your answers and try again.'));
   }
 
-  const checked = validate(body, configuration);
+  const runtimeAvailability = settings.runtimeAvailability || (settings.state && settings.state.runtimeAvailability) || require('../../../config/availability.json');
+  const checked = validate(body, configuration, runtimeAvailability);
   const fields = Object.keys(checked.errors);
   if (fields.length > 0) {
     log('validation_failed', { fields });
@@ -249,6 +252,14 @@ async function handleSubmission(event, options) {
 
   const vendor = await postToVendor(fetchImpl, buildVendorBody(checked.value, configuration, clientIp));
   const classification = vendor.failed ? { kind: 'ambiguous' } : classify(vendor.status, vendor.text);
+  let runtimeState = runtimeAvailability;
+  if (classification.kind === 'rejected' && !configuration.testMode) {
+    const capResult = applyCapPause(runtimeState, checked.value.campus.id, checked.value.program.id, vendor.text, { testMode: configuration.testMode });
+    runtimeState = capResult.runtimeState || runtimeState;
+    if (capResult.changed && settings.persistRuntimeAvailability) {
+      await settings.persistRuntimeAvailability(runtimeState);
+    }
+  }
   const outcome = publicOutcome(classification.kind);
   const response = { outcome, testMode: configuration.testMode };
   if (outcome !== 'accepted') {

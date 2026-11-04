@@ -59,14 +59,13 @@
   function chooseVersion(state, now) {
     const normalized = normalizeState(state);
     const current = now || new Date();
-    const validVersions = normalized.versions.filter(function (version) { return Boolean(effectiveAt(version, current)); });
-    if (validVersions.length === 0) {
-      return normalized.versions.find(function (version) { return version && version.id === normalized.currentVersion; }) || null;
-    }
-    validVersions.sort(function (left, right) {
+    const validVersions = normalized.versions.filter(function (version) {
+      return Boolean(effectiveAt(version, current));
+    }).sort(function (left, right) {
       return Date.parse(right.effectiveDate || 0) - Date.parse(left.effectiveDate || 0);
     });
-    return validVersions[0] || null;
+    if (validVersions.length > 0) return validVersions[0];
+    return null;
   }
 
   function applyPauseOverride(override, defaultValue) {
@@ -89,10 +88,30 @@
 
   function resolveRuntime(config, state, now) {
     const normalized = normalizeState(state);
-    const version = chooseVersion(normalized, now) || { id: normalized.currentVersion || null, effectiveDate: null, expiresAt: null, campuses: {}, offerings: {} };
+    const version = chooseVersion(normalized, now);
     const source = initialState(config);
     const campuses = {};
     const offerings = {};
+
+    if (!version) {
+      (config && Array.isArray(config.campuses) ? config.campuses : []).forEach(function (campus) {
+        campuses[campus.id] = { active: false };
+      });
+      (config && Array.isArray(config.offerings) ? config.offerings : []).forEach(function (offering) {
+        const key = offering.campus + '/' + offering.program;
+        offerings[key] = { active: false };
+      });
+      return {
+        currentVersion: null,
+        effectiveDate: null,
+        expiresAt: null,
+        campuses: campuses,
+        offerings: offerings,
+        pendingVersion: normalized.pendingVersion || null,
+        manualPauses: normalized.manualPauses,
+        capPauses: normalized.capPauses
+      };
+    }
 
     (config && Array.isArray(config.campuses) ? config.campuses : []).forEach(function (campus) {
       const override = version && version.campuses && Object.prototype.hasOwnProperty.call(version.campuses, campus.id) ? version.campuses[campus.id] : null;
@@ -113,7 +132,7 @@
     });
 
     return {
-      currentVersion: version && version.id ? version.id : normalized.currentVersion || null,
+      currentVersion: version && version.id ? version.id : null,
       effectiveDate: version && version.effectiveDate || null,
       expiresAt: version && version.expiresAt || null,
       campuses: campuses,

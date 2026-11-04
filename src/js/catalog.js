@@ -69,6 +69,16 @@
 
   function runtimeState(config, runtimeAvailability) {
     const state = runtimeAvailability || (typeof window !== 'undefined' ? window.UEI_RUNTIME_AVAILABILITY : null) || { campuses: {}, offerings: {} };
+    if (state && typeof state === 'object' && ((state.campuses && typeof state.campuses === 'object') || (state.offerings && typeof state.offerings === 'object'))) {
+      return {
+        currentVersion: state.currentVersion || null,
+        pendingVersion: state.pendingVersion || null,
+        campuses: state.campuses || {},
+        offerings: state.offerings || {},
+        manualPauses: state.manualPauses || { campuses: {}, offerings: {} },
+        capPauses: state.capPauses || { campuses: {}, offerings: {} }
+      };
+    }
     if (availability && typeof availability.resolveRuntime === 'function') {
       return availability.resolveRuntime(config, state);
     }

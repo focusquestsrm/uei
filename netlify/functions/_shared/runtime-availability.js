@@ -19,10 +19,11 @@ let testStoreFactoryInstalled = false;
 
 function normalizeState(value) {
   const source = value && typeof value === 'object' ? value : {};
+  const versions = Array.isArray(source.versions) ? source.versions.filter(function (entry) { return entry && typeof entry === 'object'; }) : [];
   return {
     currentVersion: source.currentVersion || null,
     pendingVersion: source.pendingVersion || null,
-    versions: Array.isArray(source.versions) ? source.versions : [],
+    versions: versions,
     manualPauses: {
       campuses: source.manualPauses && source.manualPauses.campuses && typeof source.manualPauses.campuses === 'object' ? source.manualPauses.campuses : {},
       offerings: source.manualPauses && source.manualPauses.offerings && typeof source.manualPauses.offerings === 'object' ? source.manualPauses.offerings : {}
@@ -32,6 +33,47 @@ function normalizeState(value) {
       offerings: source.capPauses && source.capPauses.offerings && typeof source.capPauses.offerings === 'object' ? source.capPauses.offerings : {}
     }
   };
+}
+
+function deserializeStoredState(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return null;
+    }
+  }
+  if (typeof value === 'object') return value;
+  return null;
+}
+
+function mergeRuntimeState(baseState, nextState) {
+  const current = normalizeState(baseState);
+  const incoming = normalizeState(nextState);
+  const mergedVersions = [];
+  const seen = new Set();
+  [current.versions, incoming.versions].forEach(function (versions) {
+    (Array.isArray(versions) ? versions : []).forEach(function (version) {
+      if (!version || !version.id || seen.has(version.id)) return;
+      seen.add(version.id);
+      mergedVersions.push(version);
+    });
+  });
+  const merged = {
+    currentVersion: incoming.currentVersion || current.currentVersion || null,
+    pendingVersion: incoming.pendingVersion || current.pendingVersion || null,
+    versions: mergedVersions,
+    manualPauses: {
+      campuses: Object.assign({}, current.manualPauses.campuses, incoming.manualPauses.campuses),
+      offerings: Object.assign({}, current.manualPauses.offerings, incoming.manualPauses.offerings)
+    },
+    capPauses: {
+      campuses: Object.assign({}, current.capPauses.campuses, incoming.capPauses.campuses),
+      offerings: Object.assign({}, current.capPauses.offerings, incoming.capPauses.offerings)
+    }
+  };
+  return normalizeState(merged);
 }
 
 function configureNetlifyStore(getStore) {
@@ -90,13 +132,17 @@ async function loadRuntimeAvailability(options) {
   if (typeof store.getWithMetadata === 'function') {
     try {
       const result = await store.getWithMetadata(STORE_KEY);
-      if (!result || !result.data) {
+      if (!result || result.data === undefined || result.data === null) {
         if (canUseFileFallback(settings)) {
           return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
         }
         return { status: 'missing', state: EMPTY_STATE, etag: null, error: 'Runtime availability has not been initialized in durable storage.' };
       }
-      return { status: 'ok', state: normalizeState(result.data), etag: result.etag || null, error: null };
+      const parsed = deserializeStoredState(result.data);
+      if (!parsed || typeof parsed !== 'object') {
+        return { status: 'storage_error', state: EMPTY_STATE, etag: result.etag || null, error: 'Stored runtime availability is invalid JSON.' };
+      }
+      return { status: 'ok', state: normalizeState(parsed), etag: result.etag || null, error: null };
     } catch (error) {
       return { status: 'storage_error', state: EMPTY_STATE, etag: null, error: error && error.message ? error.message : String(error) };
     }
@@ -105,13 +151,17 @@ async function loadRuntimeAvailability(options) {
   if (typeof store.get === 'function') {
     try {
       const result = await store.get(STORE_KEY, { type: 'json', consistency: 'strong' });
-      if (!result) {
+      if (result === undefined || result === null) {
         if (canUseFileFallback(settings)) {
           return { status: 'ok', state: readFileState(), etag: null, error: null, source: 'file' };
         }
         return { status: 'missing', state: EMPTY_STATE, etag: null, error: 'Runtime availability has not been initialized in durable storage.' };
       }
-      return { status: 'ok', state: normalizeState(result), etag: null, error: null };
+      const parsed = deserializeStoredState(result);
+      if (!parsed || typeof parsed !== 'object') {
+        return { status: 'storage_error', state: EMPTY_STATE, etag: null, error: 'Stored runtime availability is invalid JSON.' };
+      }
+      return { status: 'ok', state: normalizeState(parsed), etag: null, error: null };
     } catch (error) {
       return { status: 'storage_error', state: EMPTY_STATE, etag: null, error: error && error.message ? error.message : String(error) };
     }
@@ -152,19 +202,23 @@ async function publishRuntimeAvailability(runtimeState, options) {
   const settings = options || {};
   const store = settings.store || getRuntimeAvailabilityStore();
   const maxAttempts = settings.maxAttempts || 3;
-  let candidate = normalizeState(runtimeState || EMPTY_STATE);
+  const desiredState = normalizeState(runtimeState || EMPTY_STATE);
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const latest = await loadRuntimeAvailability({ store });
-    const etag = latest && latest.etag ? latest.etag : null;
-    const result = await writeRuntimeAvailability(candidate, { store, ifMatch: etag || settings.ifMatch || undefined, onlyIfNew: settings.onlyIfNew || false });
-    if (result.status === 'ok') return result;
-    if (result.status === 'conflict' && attempt < maxAttempts - 1) {
-      candidate = latest.state || candidate;
-      continue;
+    if (latest.status === 'storage_error') return { status: 'storage_error', state: desiredState, modified: false, etag: null, error: latest.error };
+    if (latest.status === 'missing') {
+      const result = await writeRuntimeAvailability(desiredState, { store, onlyIfNew: true });
+      if (result.status === 'ok') return result;
+      if (result.status === 'conflict' && attempt < maxAttempts - 1) continue;
+      return result;
     }
+    const candidate = mergeRuntimeState(latest.state, desiredState);
+    const result = await writeRuntimeAvailability(candidate, { store, ifMatch: latest.etag || undefined });
+    if (result.status === 'ok') return result;
+    if (result.status === 'conflict' && attempt < maxAttempts - 1) continue;
     return result;
   }
-  return { status: 'conflict', state: candidate, modified: false, etag: null, error: 'Conflict retries were exhausted.' };
+  return { status: 'conflict', state: normalizeState(desiredState), modified: false, etag: null, error: 'Conflict retries were exhausted.' };
 }
 
 module.exports = {

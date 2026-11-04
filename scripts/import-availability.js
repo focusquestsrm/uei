@@ -4,9 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const catalog = require('../src/js/catalog');
 const availability = require('../src/js/availability');
-const { publishRuntimeAvailability } = require('../netlify/functions/_shared/runtime-availability');
+const runtimeAvailability = require('../netlify/functions/_shared/runtime-availability');
 
 const root = path.join(__dirname, '..');
+const TARGET = (() => {
+  const direct = process.argv.find((entry) => entry.startsWith('--target='));
+  if (direct) return direct.split('=')[1];
+  const index = process.argv.indexOf('--target');
+  return index !== -1 ? process.argv[index + 1] : null;
+})();
 const FILE = (() => {
   const direct = process.argv.find((entry) => entry.startsWith('--file='));
   if (direct) return direct.split('=')[1];
@@ -76,7 +82,40 @@ function printDiff(diff) {
   diff.closed.forEach((entry) => console.log('  - ' + entry.scope + ': ' + entry.id));
 }
 
+function createMockStore(filePath) {
+  const target = path.resolve(filePath || path.join(root, '.tmp', 'runtime-availability.mock-store.json'));
+  const ensure = function () {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    if (!fs.existsSync(target)) {
+      fs.writeFileSync(target, JSON.stringify({ __meta__: { etag: null, updatedAt: null }, data: null }, null, 2) + '\n', 'utf8');
+    }
+  };
+  return {
+    async getWithMetadata(key) {
+      ensure();
+      const raw = fs.readFileSync(target, 'utf8');
+      const parsed = raw ? JSON.parse(raw) : { __meta__: { etag: null }, data: null };
+      if (!parsed || !parsed.data || key !== 'runtime-availability') return null;
+      return { data: parsed.data, etag: parsed.__meta__ && parsed.__meta__.etag ? parsed.__meta__.etag : null };
+    },
+    async setJSON(key, value, options) {
+      ensure();
+      const raw = fs.readFileSync(target, 'utf8');
+      const parsed = raw ? JSON.parse(raw) : { __meta__: { etag: null }, data: null };
+      const exists = parsed && parsed.data ? parsed.__meta__ : { etag: null };
+      if (options && options.onlyIfMatch && exists.etag && exists.etag !== options.onlyIfMatch) {
+        return { modified: false, etag: exists.etag };
+      }
+      const etag = 'etag-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8);
+      const payload = { __meta__: { etag, updatedAt: new Date().toISOString() }, data: JSON.parse(JSON.stringify(value)) };
+      fs.writeFileSync(target, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+      return { modified: true, etag };
+    }
+  };
+}
+
 function resolveRuntimeStore() {
+  if (TARGET) return createMockStore(TARGET);
   try {
     const { getStore } = require('@netlify/blobs');
     return getStore({ name: 'uei-runtime-availability', consistency: 'strong' });
@@ -85,50 +124,67 @@ function resolveRuntimeStore() {
   }
 }
 
-if (!FILE) {
-  console.error('Usage: node scripts/import-availability.js --file path/to/availability.json [--apply] [--publish]');
-  process.exit(1);
+async function main() {
+  if (!FILE) {
+    console.error('Usage: node scripts/import-availability.js --file path/to/availability.json [--apply] [--publish] [--target path/mock-store.json]');
+    process.exitCode = 1;
+    return;
+  }
+
+  const filePath = path.isAbsolute(FILE) ? FILE : path.resolve(root, FILE.replace(/^\.?\.?\//, ''));
+  const imported = parseImportedFile(filePath);
+  const errors = availability.validateImportedVersion(baseConfig, imported);
+  if (errors.length) {
+    console.error('Import validation failed:');
+    errors.forEach((entry) => console.error('  - ' + entry));
+    process.exitCode = 1;
+    return;
+  }
+
+  const effectiveNow = availability.effectiveAt(imported, new Date());
+  const nextState = Object.assign({}, previousState, {
+    pendingVersion: imported.id,
+    versions: Array.isArray(previousState.versions) ? previousState.versions.concat(imported) : [imported]
+  });
+  if (effectiveNow) {
+    nextState.currentVersion = imported.id;
+  }
+  const previousRuntime = availability.resolveRuntime(baseConfig, previousState, new Date());
+  const nextRuntime = availability.resolveRuntime(baseConfig, nextState, new Date());
+  const diff = availability.diffRuntime(previousRuntime, nextRuntime);
+  printDiff(diff);
+
+  if (APPLY) {
+    fs.writeFileSync(availabilityPath, JSON.stringify(nextState, null, 2) + '\n', 'utf8');
+    console.log('Saved staged availability version: ' + imported.id + '. This local file is not runtime publication; it is only a locally approved record until a separate runtime publish step is executed.');
+    return;
+  }
+  if (PUBLISH) {
+    const store = resolveRuntimeStore();
+    if (!store) {
+      console.error('Runtime publish requires a configured Netlify Blobs store or --target for a mock store.');
+      process.exitCode = 1;
+      return;
+    }
+    const published = await runtimeAvailability.publishRuntimeAvailability({
+      currentVersion: effectiveNow ? imported.id : previousState.currentVersion || null,
+      pendingVersion: imported.id,
+      versions: [imported],
+      manualPauses: previousState.manualPauses || { campuses: {}, offerings: {} },
+      capPauses: previousState.capPauses || { campuses: {}, offerings: {} }
+    }, { store, maxAttempts: 5 });
+    if (published.status !== 'ok') {
+      console.error('Runtime publish failed: ' + (published.error || 'unknown error'));
+      process.exitCode = 1;
+      return;
+    }
+    console.log('Published runtime availability to the durable store for version ' + imported.id + '.');
+    return;
+  }
+  console.log('Preview only. Use --preview to print this diff again, --apply to stage the version in the approved local configuration, or --publish to push the approved version into the durable runtime state.');
 }
 
-const filePath = path.isAbsolute(FILE) ? FILE : path.resolve(root, FILE.replace(/^\.?\.?\//, ''));
-const imported = parseImportedFile(filePath);
-const errors = availability.validateImportedVersion(baseConfig, imported);
-if (errors.length) {
-  console.error('Import validation failed:');
-  errors.forEach((entry) => console.error('  - ' + entry));
-  process.exit(1);
-}
-
-const effectiveNow = availability.effectiveAt(imported, new Date());
-const nextState = Object.assign({}, previousState, {
-  pendingVersion: imported.id,
-  versions: Array.isArray(previousState.versions) ? previousState.versions.concat(imported) : [imported]
+main().catch((error) => {
+  console.error('Import failed: ' + (error && error.message ? error.message : String(error)));
+  process.exitCode = 1;
 });
-if (effectiveNow) {
-  nextState.currentVersion = imported.id;
-}
-const previousRuntime = availability.resolveRuntime(baseConfig, previousState, new Date());
-const nextRuntime = availability.resolveRuntime(baseConfig, nextState, new Date());
-const diff = availability.diffRuntime(previousRuntime, nextRuntime);
-printDiff(diff);
-
-if (APPLY) {
-  fs.writeFileSync(availabilityPath, JSON.stringify(nextState, null, 2) + '\n', 'utf8');
-  console.log('Saved staged availability version: ' + imported.id + '. This local file is not runtime publication; it is only a locally approved record until a separate runtime publish step is executed.');
-  return;
-}
-if (PUBLISH) {
-  const store = resolveRuntimeStore();
-  if (!store) {
-    console.error('Runtime publish requires a configured Netlify Blobs store.');
-    process.exit(1);
-  }
-  const published = await publishRuntimeAvailability(nextState, { store, maxAttempts: 5 });
-  if (published.status !== 'ok') {
-    console.error('Runtime publish failed: ' + (published.error || 'unknown error'));
-    process.exit(1);
-  }
-  console.log('Published runtime availability to the durable store for version ' + imported.id + '.');
-  return;
-}
-console.log('Preview only. Use --preview to print this diff again, --apply to stage the version in the approved local configuration, or --publish to push the approved version into the durable runtime state.');

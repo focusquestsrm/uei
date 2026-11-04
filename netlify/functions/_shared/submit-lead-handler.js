@@ -228,9 +228,15 @@ async function handleSubmission(event, options) {
     return reply(400, withDiagnostic('validation_error', 'E_INVALID_INPUT', 'We could not accept some of your information. Please review your answers and try again.'));
   }
 
-  const runtimeAvailability = settings.runtimeAvailability || (settings.state && settings.state.runtimeAvailability) || await loadRuntimeAvailability({
+  const desired = settings.runtimeAvailability || (settings.state && settings.state.runtimeAvailability);
+  const loaded = desired ? { status: 'ok', state: desired, etag: null } : await loadRuntimeAvailability({
     store: settings.store || getRuntimeAvailabilityStore()
   });
+  if (loaded.status !== 'ok') {
+    log('runtime_availability_unavailable', { status: loaded.status, error: loaded.error });
+    return reply(503, withDiagnostic('unavailable', loaded.status === 'missing' ? 'E_RUNTIME_UNAVAILABLE' : 'E_AVAILABILITY_STORAGE', loaded.status === 'missing' ? 'Availability has not been initialized yet. Please try again shortly.' : 'We are temporarily unable to process requests. Please try again in a few minutes.', { retryable: true }));
+  }
+  const runtimeAvailability = loaded.state;
   const checked = validate(body, configuration, runtimeAvailability);
   const fields = Object.keys(checked.errors);
   if (fields.length > 0) {

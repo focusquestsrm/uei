@@ -94,12 +94,14 @@ async function completeSubmission(store, reservation, state, response, now) {
 // Replays return the original outcome and never post again.
 function responseForDuplicate(record) {
   if (!record || record.state === 'processing') {
-    return { statusCode: 202, body: { outcome: 'pending' } };
+    return { statusCode: 202, body: { outcome: 'pending', code: 'E_DUPLICATE_PENDING', message: 'Your request is still being processed. Please wait a moment and try again.' } };
   }
   if (record.state === 'completed' && record.response) {
-    return { statusCode: 200, body: Object.assign({}, record.response, { replay: true }) };
+    const body = Object.assign({}, record.response, { replay: true });
+    if (body.outcome !== 'accepted' && !body.code) body.code = 'E_DUPLICATE_REPLAY';
+    return { statusCode: 200, body };
   }
-  return { statusCode: 502, body: { outcome: 'ambiguous', retryable: false, replay: true } };
+  return { statusCode: 502, body: { outcome: 'ambiguous', code: 'E_DUPLICATE_AMBIGUOUS', retryable: false, replay: true, message: 'We could not confirm your request right now. Please try again later.' } };
 }
 
 module.exports = {

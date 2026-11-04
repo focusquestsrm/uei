@@ -17,6 +17,7 @@ const {
 } = require('./submission-idempotency');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
+const CAMPAIGN_GENDER_DEFAULT = 'M';
 const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'subid2', 'subid3', 'subid4'];
 const ATTRIBUTION_PATTERN = /^[A-Za-z0-9 _.,:;|+~%()/-]{1,200}$/;
 
@@ -73,8 +74,8 @@ function validate(body, configuration) {
 
   value.age = str(body.age);
   check('age', rules.isValidAge(value.age));
-  value.gender = str(body.gender);
-  check('gender', rules.isValidGender(value.gender));
+  // The campaign requires a fixed gender value for every lead. Ignore any browser-provided
+  // value so the vendor always receives the campaign-approved default.
   value.military = str(body.military);
   check('military', rules.isValidMilitary(value.military));
   value.gradYear = str(body.gradYear);
@@ -133,7 +134,7 @@ function buildVendorBody(value, configuration, clientIp) {
   add('lead[email]', value.email);
   add('lead[phone1]', value.phone);
   add('lead[age]', value.age);
-  add('lead[gender]', value.gender);
+  add('lead[gender]', CAMPAIGN_GENDER_DEFAULT);
   add('lead_education[grad_year]', value.gradYear);
   add('lead_background[military_type]', value.military);
   add('lead_education[education_level_id]', value.education);
@@ -176,6 +177,10 @@ function publicOutcome(kind) {
   return 'unavailable';
 }
 
+function withDiagnostic(outcome, code, message, extra) {
+  return Object.assign({ outcome, code, message }, extra || {});
+}
+
 async function handleSubmission(event, options) {
   const settings = options || {};
   const env = settings.env || process.env;
@@ -186,22 +191,24 @@ async function handleSubmission(event, options) {
   const configuration = readConfiguration(env);
   if (!configuration.ready) {
     log('submission_unavailable', { reason: 'not_configured' });
-    return reply(503, { outcome: 'unavailable', retryable: true });
+    return reply(503, withDiagnostic('unavailable', 'E_CONFIG', 'We are temporarily unable to accept requests. Please try again in a few minutes.', { retryable: true }));
   }
-  if (!originAllowed(event, configuration.origin)) return reply(403, { outcome: 'validation_error' });
+  if (!originAllowed(event, configuration.origin)) {
+    return reply(403, withDiagnostic('validation_error', 'E_ORIGIN_MISMATCH', 'This page could not be validated from the current site. Please refresh and try again.', { fields: ['origin'] }));
+  }
 
   // Outside the delivery window nothing is reserved, posted, queued, or stored; the visitor
   // is asked to come back and submit again.
   const now = settings.now ? settings.now() : new Date();
   if (!deliveryWindow.isOpen(now)) {
     log('outside_delivery_window', {});
-    return reply(503, { outcome: 'closed', retryable: true, message: deliveryWindow.MESSAGE });
+    return reply(503, withDiagnostic('closed', 'E_DELIVERY_CLOSED', deliveryWindow.MESSAGE, { retryable: true }));
   }
 
   const clientIp = validClientIp(event.clientIp);
   if (!clientIp) {
     log('submission_unavailable', { reason: 'no_client_ip' });
-    return reply(400, { outcome: 'validation_error' });
+    return reply(400, withDiagnostic('validation_error', 'E_CLIENT_IP_MISSING', 'We could not verify your request from this connection. Please refresh and try again.', { fields: ['clientIp'] }));
   }
 
   const raw = String(event.body || '');
@@ -212,17 +219,17 @@ async function handleSubmission(event, options) {
   } catch (error) {
     body = null;
   }
-  if (!body || typeof body !== 'object' || Array.isArray(body)) return reply(400, { outcome: 'validation_error' });
-  if (!validSubmissionId(body.submissionId)) return reply(400, { outcome: 'validation_error', fields: ['submissionId'] });
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return reply(400, withDiagnostic('validation_error', 'E_INVALID_BODY', 'We could not read your request. Please review your information and try again.'));
+  if (!validSubmissionId(body.submissionId)) return reply(400, withDiagnostic('validation_error', 'E_INVALID_SUBMISSION_ID', 'This request could not be verified. Please refresh and try again.', { fields: ['submissionId'] }));
   if (Object.values(body).some(function (entry) { return typeof entry === 'string' && /~invalid~/i.test(entry); })) {
-    return reply(400, { outcome: 'validation_error' });
+    return reply(400, withDiagnostic('validation_error', 'E_INVALID_INPUT', 'We could not accept some of your information. Please review your answers and try again.'));
   }
 
   const checked = validate(body, configuration);
   const fields = Object.keys(checked.errors);
   if (fields.length > 0) {
     log('validation_failed', { fields });
-    return reply(400, { outcome: 'validation_error', fields });
+    return reply(400, withDiagnostic('validation_error', 'E_VALIDATION_FAILED', 'We could not accept some of your information. Please review your answers and try again.', { fields }));
   }
 
   let store = null;
@@ -232,7 +239,7 @@ async function handleSubmission(event, options) {
     reservation = await reserveSubmission(store, body.submissionId, settings.requestId);
   } catch (error) {
     log('reservation_failed', { error: error && error.name });
-    return reply(503, { outcome: 'unavailable', retryable: true });
+    return reply(503, withDiagnostic('unavailable', 'E_RESERVATION_FAILED', 'We could not reserve your request right now. Please try again in a few minutes.', { retryable: true }));
   }
   if (!reservation.owner) {
     const duplicate = responseForDuplicate(reservation.record);
@@ -244,6 +251,11 @@ async function handleSubmission(event, options) {
   const classification = vendor.failed ? { kind: 'ambiguous' } : classify(vendor.status, vendor.text);
   const outcome = publicOutcome(classification.kind);
   const response = { outcome, testMode: configuration.testMode };
+  if (outcome !== 'accepted') {
+    const vendorCode = classification.kind === 'configuration' ? 'E_VENDOR_CONFIGURATION' : classification.kind === 'http_failure' ? 'E_VENDOR_HTTP_FAILURE' : classification.kind === 'ambiguous' ? 'E_VENDOR_AMBIGUOUS' : classification.kind === 'duplicate' ? 'E_VENDOR_DUPLICATE' : classification.kind === 'rejected' ? 'E_VENDOR_REJECTED' : classification.kind === 'invalid_request' ? 'E_VENDOR_INVALID_REQUEST' : 'E_VENDOR_UNKNOWN';
+    response.code = vendorCode;
+    response.message = outcome === 'rejected' ? 'We are not accepting requests for this option right now. Please try again later.' : outcome === 'duplicate' ? 'We already received this request.' : outcome === 'invalid_request' ? 'We could not accept some of your information. Please review your answers and try again.' : 'We could not confirm your request right now. Please try again later.';
+  }
   const definitive = ['accepted', 'rejected', 'duplicate', 'invalid_request'].indexOf(outcome) !== -1;
 
   log('vendor_result', {

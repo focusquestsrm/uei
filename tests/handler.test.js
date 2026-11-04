@@ -39,7 +39,7 @@ test('posts the exact vendor contract for a valid lead', async () => {
   assert.equal(p.get('lead_education[education_level_id]'), '2274');
   assert.equal(p.get('lead_education[grad_year]'), '2015');
   assert.equal(p.get('lead_background[military_type]'), 'N');
-  assert.equal(p.get('lead[gender]'), 'F');
+  assert.equal(p.get('lead[gender]'), 'M');
   assert.equal(p.get('lead[age]'), '30');
   assert.equal(p.get('utm_source'), 'fb');
   assert.equal(p.get('subid2'), 'fb.1.1.abc');
@@ -53,6 +53,11 @@ test('live mode sends lead[test]=false', async () => {
   const { settings, json } = await run(validBody(), { env: Object.assign({}, ENV, { LEAD_TEST_MODE: 'false' }) });
   assert.equal(settings.fetch.calls[0].params.get('lead[test]'), 'false');
   assert.equal(json.testMode, false);
+});
+
+test('campaign gender default remains M even if a request supplies another value', async () => {
+  const { settings } = await run(validBody({ gender: 'F' }));
+  assert.equal(settings.fetch.calls[0].params.get('lead[gender]'), 'M');
 });
 
 test('blocked before reservation when not configured, origin wrong, or IP missing', async () => {
@@ -78,7 +83,6 @@ test('invalid input is rejected without posting or reserving', async () => {
     phone: { phone: '12345' },
     age: { age: '17' },
     gradYear: { gradYear: '2025' },
-    gender: { gender: '' },
     military: { military: '' },
     education: { education: '1' },
     consent: { consent: '' },

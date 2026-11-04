@@ -14,11 +14,6 @@
   const MIN_GRAD_YEAR = 1998;
   const MAX_GRAD_YEAR = 2024;
 
-  const GENDERS = Object.freeze([
-    { value: 'M', label: 'Male' },
-    { value: 'F', label: 'Female' }
-  ]);
-
   // Y means active duty; N covers every other affiliation listed by the spec.
   const MILITARY = Object.freeze([
     { value: 'N', label: 'No' },
@@ -56,10 +51,6 @@
     return /^\d{1,3}$/.test(String(value)) && Number(value) >= MIN_AGE && Number(value) <= MAX_AGE;
   }
 
-  function isValidGender(value) {
-    return GENDERS.some(function (entry) { return entry.value === value; });
-  }
-
   function isValidMilitary(value) {
     return MILITARY.some(function (entry) { return entry.value === value; });
   }
@@ -88,8 +79,8 @@
   }
 
   return Object.freeze({
-    MIN_AGE, MAX_AGE, MIN_GRAD_YEAR, MAX_GRAD_YEAR, GENDERS, MILITARY, EDUCATION_LEVELS, START_DATES,
-    gradYears, isValidGradYear, isValidAge, isValidGender, isValidMilitary, isValidEducation,
+    MIN_AGE, MAX_AGE, MIN_GRAD_YEAR, MAX_GRAD_YEAR, MILITARY, EDUCATION_LEVELS, START_DATES,
+    gradYears, isValidGradYear, isValidAge, isValidMilitary, isValidEducation,
     isValidStartDate, isValidName, isValidEmail, isValidLeadIdToken
   });
 });

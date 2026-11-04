@@ -118,14 +118,14 @@ async function newPage(browser, origin, profile) {
 async function fill(page, overrides) {
   const v = Object.assign({
     campus: 'bakersfield', program: 'dental-assistant', education: '2274|high-school-diploma', gradYear: '2015', age: '30',
-    gender: 'F', military: 'N', address: '123 Main St', address2: 'Apt 4', city: 'Bakersfield', state: 'CA', zip: null,
+    military: 'N', address: '123 Main St', address2: 'Apt 4', city: 'Bakersfield', state: 'CA', zip: null,
     firstName: 'Testy', lastName: 'Person', email: 'testy@example.com', phone: '(555) 234-5678', startDate: 'Immediately'
   }, overrides);
   if (!v.zip) v.zip = await page.evaluate((id) => window.UEI_CHOICES.campuses.find((c) => c.id === id).zips[0], v.campus);
   await page.selectOption('#campus', v.campus);
   await page.selectOption('#program', v.program);
   await page.click('[data-step="1"] [data-next]');
-  for (const id of ['education', 'gradYear', 'gender', 'military', 'state']) await page.selectOption('#' + id, v[id]);
+  for (const id of ['education', 'gradYear', 'military', 'state']) await page.selectOption('#' + id, v[id]);
   for (const id of ['age', 'address', 'address2', 'city', 'zip']) await page.fill('#' + id, v[id]);
   await page.click('[data-step="2"] [data-next]');
   for (const id of ['firstName', 'lastName', 'email', 'phone']) await page.fill('#' + id, v[id]);

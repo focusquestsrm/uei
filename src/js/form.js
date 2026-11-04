@@ -17,7 +17,6 @@
     education: 'Please select your education level.',
     gradYear: 'Please select a year from 1998 to 2024.',
     age: 'You must be at least 18 to continue.',
-    gender: 'Please select an option.',
     military: 'Please select an option.',
     address: address.MESSAGES.address + ' (include the street number and name).',
     address2: address.MESSAGES.address2,
@@ -34,7 +33,7 @@
   };
   const STEP_FIELDS = {
     1: ['campus', 'program'],
-    2: ['education', 'gradYear', 'age', 'gender', 'military', 'address', 'address2', 'city', 'state', 'zip'],
+    2: ['education', 'gradYear', 'age', 'military', 'address', 'address2', 'city', 'state', 'zip'],
     3: ['firstName', 'lastName', 'email', 'phone', 'startDate', 'consent']
   };
 
@@ -60,7 +59,6 @@
     choices.campuses.forEach(function (campus) { option(campusSelect, campus.id, campus.name); });
     fill(form.elements.education, rules.EDUCATION_LEVELS.map(function (level) { return { value: level.value + '|' + level.id, label: level.label }; }));
     fill(form.elements.gradYear, rules.gradYears().map(function (year) { return { value: year, label: year }; }));
-    fill(form.elements.gender, rules.GENDERS);
     fill(form.elements.military, rules.MILITARY);
     fill(form.elements.state, address.STATE_CODES.map(function (code) { return { value: code, label: code }; }));
     fill(form.elements.startDate, rules.START_DATES.map(function (entry) { return { value: entry, label: entry }; }));
@@ -140,7 +138,6 @@
     else if (name === 'education') message = text ? '' : MESSAGES.education;
     else if (name === 'gradYear') message = rules.isValidGradYear(text) ? '' : MESSAGES.gradYear;
     else if (name === 'age') message = rules.isValidAge(text) ? '' : MESSAGES.age;
-    else if (name === 'gender') message = rules.isValidGender(text) ? '' : MESSAGES.gender;
     else if (name === 'military') message = rules.isValidMilitary(text) ? '' : MESSAGES.military;
     else if (name === 'address') message = address.isValidStreetAddress(text) ? '' : MESSAGES.address;
     else if (name === 'address2') message = address.isValidAddress2(text) ? '' : MESSAGES.address2;
@@ -233,7 +230,6 @@
       education,
       gradYear: value('gradYear'),
       age: value('age'),
-      gender: value('gender'),
       military: value('military'),
       address: value('address'),
       address2: value('address2'),
@@ -268,14 +264,14 @@
     }
     if (outcome === 'invalid_request' || outcome === 'validation_error') {
       clearSubmissionId();
-      showStatus('We could not accept some of your information. Please review your answers and try again.');
+      showStatus(response && response.message ? response.message : 'We could not accept some of your information. Please review your answers and try again.');
     } else if (outcome === 'closed') {
       // Nothing was sent or stored; the same submission id stays valid for a later attempt.
-      showStatus(response.message || 'We are not accepting requests right now. Please try again later.');
+      showStatus(response && response.message ? response.message : 'We are not accepting requests right now. Please try again later.');
     } else if (outcome === 'pending') {
-      showStatus('Your request is still being processed. Please wait a moment before trying again.');
+      showStatus(response && response.message ? response.message : 'Your request is still being processed. Please wait a moment before trying again.');
     } else {
-      showStatus('We could not confirm your request right now. Please try again later.');
+      showStatus(response && response.message ? response.message : 'We could not confirm your request right now. Please try again later.');
     }
     submitting = false;
     submitButton.disabled = false;
@@ -308,7 +304,7 @@
       httpOk = reply.ok;
       response = await reply.json();
     } catch (error) {
-      response = { outcome: 'unavailable' };
+      response = { outcome: 'unavailable', code: 'E_NETWORK', message: 'We could not confirm your request right now. Please try again later.' };
     }
     submitButton.textContent = 'Request Information';
     finish(response, httpOk);

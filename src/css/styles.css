@@ -78,6 +78,9 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color: var(--error)
 .cta-band h2 { color: #fff; }
 
 .site-footer { background: #2b2a26; color: #e9e9e6; padding: 28px 0; font-size: .85rem; }
+.site-footer a { color: #dff3ff; text-decoration: underline; text-underline-offset: 2px; }
+.site-footer a:hover, .site-footer a:focus-visible { color: #ffffff; text-decoration-thickness: 2px; }
+.site-footer a:visited { color: #dfe8ff; }
 .site-footer p { margin: 0 0 10px; }
 .copyright { margin-top: 14px; }
 .thanks { padding: 64px 0; text-align: center; }

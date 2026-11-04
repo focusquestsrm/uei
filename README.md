@@ -52,7 +52,8 @@ Intentionally not carried over: Google Places, program availability/cap admin fu
 - Endpoint `https://back2learn-post.leadhoop.com/incoming/leads`. The spec lists `http://`; the same host answers on HTTPS, so HTTPS is used.
 - Outcomes: `accepted` (2xx + `success`), `rejected` (caps, advertiser, verification), `invalid_request`, `duplicate`, `unavailable` (non-2xx, including a success-looking body), `ambiguous` (timeout/network/unreadable). `unavailable`/`ambiguous` are never reposted; the same submission id replays the stored outcome.
 - Meta `Lead` fires only for an HTTP-OK `accepted` response with `testMode:false` and no `replay`. Inherited Back2Learn tracking is kept: `_fbc`→`subid2`, `_fbp`→`subid3`, `fbclid`→`subid4`, plus `utm_*`. `subid` itself is never sent.
-- Gender and military status are collected from the user; no defaults.
+- Gender is not collected from the consumer. The campaign requires a fixed outbound value of `lead[gender]=M`; any browser-provided or request-supplied gender value is ignored by the server.
+- Military status is collected from the user; no default.
 - Grad year options are 1998–2024 (campaign rule overrides the broader spec list). No "no diploma" option exists in the spec.
 
 ## Delivery window

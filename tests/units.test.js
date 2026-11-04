@@ -45,7 +45,6 @@ test('campaign limits are enforced', () => {
   assert.ok(!rules.isValidGradYear('1997') && !rules.isValidGradYear('2025'));
   assert.ok(rules.isValidAge('18') && !rules.isValidAge('17'));
   assert.ok(rules.isValidEducation('2274') && !rules.isValidEducation('2273'));
-  assert.ok(rules.isValidGender('M') && !rules.isValidGender('X'));
   assert.ok(rules.isValidMilitary('Y') && rules.isValidMilitary('N') && !rules.isValidMilitary(''));
   assert.ok(rules.isValidLeadIdToken('0123ABCD-4567-89ab-cdef-0123456789AB'));
   assert.ok(!rules.isValidLeadIdToken('short'));

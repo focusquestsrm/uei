@@ -23,6 +23,7 @@ function memoryStore() {
   const data = new Map();
   let counter = 0;
   return {
+    data,
     async setJSON(key, value, options) {
       const existing = data.get(key);
       if (options && options.onlyIfNew && existing) return { modified: false };
@@ -138,6 +139,8 @@ function reset(vendor, testMode) {
   state.vendor = vendor || { status: 200, body: '{"status":"success","testing":true}' };
   state.calls = [];
   state.store = memoryStore();
+  const defaultAvailability = require('../config/availability.json');
+  state.store.data.set('runtime-availability', { value: JSON.parse(JSON.stringify(defaultAvailability)), etag: 'e0' });
   state.testMode = testMode !== false;
   state.tokenEnabled = true;
 }

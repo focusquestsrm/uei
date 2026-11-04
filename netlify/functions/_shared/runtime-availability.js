@@ -28,6 +28,18 @@ function isValidDateString(value) {
   return Number.isFinite(parsed.getTime());
 }
 
+function validateVersionDateRange(entry) {
+  if (!entry || !isPlainObject(entry)) return false;
+  if (!entry.effectiveDate || !isValidDateString(entry.effectiveDate)) return false;
+  if (entry.expiresAt !== undefined && entry.expiresAt !== null && entry.expiresAt !== '') {
+    if (!isValidDateString(entry.expiresAt)) return false;
+    const effectiveMs = new Date(entry.effectiveDate).getTime();
+    const expiresMs = new Date(entry.expiresAt).getTime();
+    if (!(expiresMs > effectiveMs)) return false;
+  }
+  return true;
+}
+
 function normalizeState(value) {
   const source = isPlainObject(value) ? value : {};
   const versions = Array.isArray(source.versions) ? source.versions.filter(function (entry) { return entry && typeof entry === 'object'; }) : [];
@@ -63,8 +75,7 @@ function validateRuntimeStateShape(value) {
   for (const entry of value.versions) {
     if (!isPlainObject(entry)) return false;
     if (!entry.id || typeof entry.id !== 'string' || !String(entry.id).trim()) return false;
-    if (entry.effectiveDate !== undefined && entry.effectiveDate !== null && !isValidDateString(entry.effectiveDate)) return false;
-    if (entry.expiresAt !== undefined && entry.expiresAt !== null && !isValidDateString(entry.expiresAt)) return false;
+    if (!validateVersionDateRange(entry)) return false;
     if (entry.campuses !== undefined && !isPlainObject(entry.campuses)) return false;
     if (entry.offerings !== undefined && !isPlainObject(entry.offerings)) return false;
   }
@@ -132,7 +143,10 @@ function getRuntimeAvailabilityStore() {
 function readFileState() {
   try {
     const raw = fs.readFileSync(DEFAULT_PATH, 'utf8');
-    return raw ? normalizeState(JSON.parse(raw)) : EMPTY_STATE;
+    if (!raw) return EMPTY_STATE;
+    const parsed = deserializeStoredState(raw);
+    if (!parsed || !validateRuntimeStateShape(parsed)) return EMPTY_STATE;
+    return normalizeState(parsed);
   } catch (error) {
     return EMPTY_STATE;
   }
@@ -211,7 +225,11 @@ async function loadRuntimeAvailability(options) {
 
 async function writeRuntimeAvailability(runtimeState, options) {
   const settings = options || {};
-  const state = normalizeState(runtimeState || EMPTY_STATE);
+  const source = runtimeState || EMPTY_STATE;
+  if (!validateRuntimeStateShape(source)) {
+    return { status: 'invalid', state: normalizeState(source), modified: false, etag: settings.ifMatch || null, error: 'Runtime availability state is invalid: effectiveDate is required and expiresAt must be later than effectiveDate.' };
+  }
+  const state = normalizeState(source);
   const store = settings.store || getRuntimeAvailabilityStore();
   if (!store || typeof store.setJSON !== 'function') {
     return { status: 'missing', state, modified: false, etag: null, error: 'Runtime availability store is not configured.' };
@@ -265,7 +283,11 @@ async function publishRuntimeAvailability(runtimeState, options) {
   const settings = options || {};
   const store = settings.store || getRuntimeAvailabilityStore();
   const maxAttempts = settings.maxAttempts || 3;
-  const desiredState = normalizeState(runtimeState || EMPTY_STATE);
+  const source = runtimeState || EMPTY_STATE;
+  if (!validateRuntimeStateShape(source)) {
+    return { status: 'invalid', state: normalizeState(source), modified: false, etag: null, error: 'Runtime availability state is invalid: effectiveDate is required and expiresAt must be later than effectiveDate.' };
+  }
+  const desiredState = normalizeState(source);
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const latest = await loadRuntimeAvailability({ store, allowFileFallback: false });
     if (latest.status === 'storage_error') return { status: 'storage_error', state: desiredState, modified: false, etag: null, error: latest.error };

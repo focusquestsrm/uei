@@ -150,7 +150,13 @@
     const offeringPairs = new Set((config && Array.isArray(config.offerings) ? config.offerings : []).map(function (offering) { return offering.campus + '/' + offering.program; }));
 
     if (!version || !version.id || !String(version.id).trim()) errors.push('Version id is required.');
-    if (!version || !version.effectiveDate || !parseDate(version.effectiveDate)) errors.push('Version effectiveDate is required and must be a valid date.');
+    const effectiveDate = version && version.effectiveDate ? parseDate(version.effectiveDate) : null;
+    if (!effectiveDate) errors.push('Version effectiveDate is required and must be a valid date.');
+    if (version && version.expiresAt !== undefined && version.expiresAt !== null && version.expiresAt !== '') {
+      const expiresAt = parseDate(version.expiresAt);
+      if (!expiresAt) errors.push('Version expiresAt must be a valid date when supplied.');
+      else if (effectiveDate && expiresAt.getTime() <= effectiveDate.getTime()) errors.push('Version expiresAt must be strictly later than effectiveDate.');
+    }
     if (version && version.campuses && typeof version.campuses === 'object') {
       Object.keys(version.campuses).forEach(function (campusId) {
         if (!campusIds.has(campusId)) errors.push('Unknown campus in version: ' + campusId);

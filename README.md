@@ -12,9 +12,10 @@ commit `2076e82b2ad13fb5874a83a396bcb0a4db250f49`), changed to UEI's campus-depe
 | `npm run build` | Generate `src/js/runtime-config.js`, `src/js/runtime-availability.js`, and `src/js/campus-choices.js` from `config/campus-programs.json` and `config/availability.json` |
 | `npm test` | Build, then unit and handler tests (`node --test`, vendor `fetch` is always mocked) |
 | `npm run check:browser` | Desktop and mobile browser flow against a local server; all external hosts are blocked or stubbed; screenshots go to `checks/output/` |
-| `node scripts/import-availability.js --file path/to/monthly-availability.json --preview` | Preview the campus/offer changes without writing anything |
+| `node scripts/import-availability.js --file path/to/monthly-availability.json --preview` | Preview the campus/offer changes without writing anything; `--file` is required |
 | `node scripts/import-availability.js --file path/to/monthly-availability.json --apply` | Stage a validated monthly version in the local approved config only; this is not runtime publication |
-| `node scripts/publish-availability.js --file path/to/monthly-availability.json` | Publish the approved staged version to the durable runtime availability store |
+| `node scripts/import-availability.js --file path/to/monthly-availability.json --publish` | Publish the approved version to the durable runtime availability store for the selected Netlify site |
+| `node scripts/publish-availability.js --file path/to/monthly-availability.json` | Wrapper around the runtime publish flow; requires `--file` and a linked Netlify site |
 
 ## Netlify environment variables
 
@@ -53,7 +54,7 @@ Intentionally not carried over: Google Places, program availability/cap admin fu
 ## Scheduled monthly availability and cap handling
 
 - `config/availability.json` stores the current and staged availability versions, manual pauses, and cap pauses without consumer data. The runtime automatically selects the most recent version whose `effectiveDate` is in the past and whose `expiresAt` is still in the future.
-- `scripts/import-availability.js` validates an imported `.json` or `.csv` file, prints the campus/offerings that would open or close, and refuses malformed data without replacing the last valid version unless `--apply` is present. `--apply` stages the version in the repo-local approved config only; it does not publish runtime availability. Use `scripts/publish-availability.js` or `node scripts/import-availability.js --file ... --publish` for the durable runtime state.
+- `scripts/import-availability.js` validates an imported `.json` or `.csv` file, prints the campus/offerings that would open or close, and refuses malformed data without replacing the last valid version unless `--apply` is present. `--apply` stages the version in the repo-local approved config only; it does not publish runtime availability. `--publish` writes to the durable runtime state only after the operator has selected the correct Netlify site with `netlify login` and `netlify link --site <site-name-or-id>`, or an equivalent authenticated local Netlify context. Do not publish from a different site or from a local-only file change.
 - The version schema is a JSON object with `id`, `effectiveDate`, `expiresAt`, `campuses`, and `offerings`. A campus override can be `true` or `false`, and an offering entry uses the key `campusId/programId`.
 - Manual pauses override scheduled reopening. A cap response only pauses the matching scope: a campus cap pauses that campus, a campus/program cap pauses only the matching offering, and a campaign/offer cap is treated as broader and not converted into a single-campus pause.
 - If no approved next-month list is received, the app keeps the last valid version active and leaves `pendingVersion` unset until a valid import is published.

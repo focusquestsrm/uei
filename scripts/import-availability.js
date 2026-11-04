@@ -17,7 +17,7 @@ const FILE = (() => {
   const direct = process.argv.find((entry) => entry.startsWith('--file='));
   if (direct) return direct.split('=')[1];
   const index = process.argv.indexOf('--file');
-  return index !== -1 ? process.argv[index + 1] : process.argv[2] || null;
+  return index !== -1 ? process.argv[index + 1] : null;
 })();
 const APPLY = process.argv.includes('--apply');
 const PUBLISH = process.argv.includes('--publish');

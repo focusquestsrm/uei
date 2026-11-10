@@ -290,6 +290,67 @@ test('publishRuntimeAvailability preserves durable pauses and retries on conflic
   assert.equal(durable.pendingVersion, '2026-12');
 });
 
+test('publishing a corrected November version replaces the stale one while preserving pauses', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uei-runtime-'));
+  const storePath = path.join(tempDir, 'runtime.json');
+  const stale = {
+    id: '2026-11',
+    effectiveDate: '2026-11-01T00:00:00-05:00',
+    expiresAt: '2026-12-01T00:00:00-05:00',
+    campuses: { bakersfield: false, gardena: false },
+    offerings: { 'bakersfield/dental-assistant': false, 'gardena/hvac': false }
+  };
+  const corrected = {
+    id: '2026-11',
+    effectiveDate: '2026-11-01T00:00:00-05:00',
+    expiresAt: '2026-12-01T00:00:00-05:00',
+    campuses: { bakersfield: true, gardena: true, ontario: true },
+    offerings: { 'bakersfield/dental-assistant': true, 'gardena/hvac': true, 'ontario/medical-assistant': true }
+  };
+  const initialState = {
+    currentVersion: '2026-11',
+    pendingVersion: null,
+    versions: [stale],
+    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/hvac': false } },
+    capPauses: { campuses: { sacramento: false }, offerings: {} }
+  };
+  fs.writeFileSync(storePath, JSON.stringify({ __meta__: { etag: 'seed', updatedAt: new Date().toISOString() }, data: initialState }, null, 2) + '\n', 'utf8');
+
+  const store = {
+    async getWithMetadata(key) {
+      if (key !== 'runtime-availability') return null;
+      const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+      return { data: raw.data, etag: raw.__meta__.etag };
+    },
+    async setJSON(key, value, options) {
+      const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+      if (options && options.onlyIfMatch && raw.__meta__.etag !== options.onlyIfMatch) {
+        return { modified: false, etag: raw.__meta__.etag };
+      }
+      const nextEtag = 'etag-' + Date.now();
+      fs.writeFileSync(storePath, JSON.stringify({ __meta__: { etag: nextEtag, updatedAt: new Date().toISOString() }, data: value }, null, 2) + '\n', 'utf8');
+      return { modified: true, etag: nextEtag };
+    }
+  };
+
+  const result = await runtimeAvailability.publishRuntimeAvailability({
+    currentVersion: '2026-11',
+    pendingVersion: '2026-11',
+    versions: [corrected],
+    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/hvac': false } },
+    capPauses: { campuses: { sacramento: false }, offerings: {} }
+  }, { store, maxAttempts: 5 });
+
+  assert.equal(result.status, 'ok');
+  const durable = JSON.parse(fs.readFileSync(storePath, 'utf8')).data;
+  assert.equal(durable.versions.length, 1);
+  assert.equal(durable.versions[0].campuses.bakersfield, true);
+  assert.equal(durable.versions[0].campuses.ontario, true);
+  assert.equal(durable.manualPauses.campuses.oceanside, false);
+  assert.equal(durable.manualPauses.offerings['gardena/hvac'], false);
+  assert.equal(durable.capPauses.campuses.sacramento, false);
+});
+
 test('malformed stored runtime data is rejected and expired or future versions stay inactive', async () => {
   const broken = {
     async getWithMetadata() {

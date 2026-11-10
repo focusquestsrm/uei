@@ -22,6 +22,18 @@ const FILE = (() => {
 const APPLY = process.argv.includes('--apply');
 const PUBLISH = process.argv.includes('--publish');
 const PREVIEW = process.argv.includes('--preview');
+const CLI_SITE_ID = (() => {
+  const direct = process.argv.find((entry) => entry.startsWith('--site-id='));
+  if (direct) return direct.split('=')[1];
+  const index = process.argv.indexOf('--site-id');
+  return index !== -1 ? process.argv[index + 1] : null;
+})();
+const CLI_AUTH_TOKEN = (() => {
+  const direct = process.argv.find((entry) => entry.startsWith('--token='));
+  if (direct) return direct.split('=')[1];
+  const index = process.argv.indexOf('--token');
+  return index !== -1 ? process.argv[index + 1] : null;
+})();
 const configPath = path.join(root, 'config', 'campus-programs.json');
 const availabilityPath = path.join(root, 'config', 'availability.json');
 const baseConfig = require(configPath);
@@ -116,8 +128,22 @@ function createMockStore(filePath) {
 
 function resolveRuntimeStore() {
   if (TARGET) return createMockStore(TARGET);
+
+  const siteID = CLI_SITE_ID || process.env.NETLIFY_SITE_ID || process.env.NF_SITE_ID || null;
+  const token = CLI_AUTH_TOKEN || process.env.NETLIFY_AUTH_TOKEN || process.env.NETLIFY_TOKEN || null;
+  const apiURL = process.env.NETLIFY_API_URL || process.env.NETLIFY_API_BASE || null;
+
   try {
     const { getStore } = require('@netlify/blobs');
+    if (siteID && token) {
+      return getStore({
+        name: 'uei-runtime-availability',
+        siteID,
+        token,
+        apiURL: apiURL || undefined,
+        consistency: 'strong'
+      });
+    }
     return getStore({ name: 'uei-runtime-availability', consistency: 'strong' });
   } catch (error) {
     return null;
@@ -142,9 +168,16 @@ async function main() {
   }
 
   const effectiveNow = availability.effectiveAt(imported, new Date());
+  const mergedVersions = Array.isArray(previousState.versions) ? previousState.versions.slice() : [];
+  const replacementIndex = mergedVersions.findIndex((entry) => entry && entry.id === imported.id);
+  if (replacementIndex >= 0) {
+    mergedVersions[replacementIndex] = imported;
+  } else {
+    mergedVersions.push(imported);
+  }
   const nextState = Object.assign({}, previousState, {
     pendingVersion: imported.id,
-    versions: Array.isArray(previousState.versions) ? previousState.versions.concat(imported) : [imported]
+    versions: mergedVersions
   });
   if (effectiveNow) {
     nextState.currentVersion = imported.id;
@@ -162,16 +195,23 @@ async function main() {
   if (PUBLISH) {
     const store = resolveRuntimeStore();
     if (!store) {
-      console.error('Runtime publish requires a configured Netlify Blobs store or --target for a mock store.');
+      console.error('Runtime publish requires a configured Netlify Blobs store, an authenticated Netlify context, or explicit NETLIFY_SITE_ID + NETLIFY_AUTH_TOKEN (or --site-id/--token). No secret values are printed.');
       process.exitCode = 1;
       return;
     }
     const durable = await runtimeAvailability.loadRuntimeAvailability({ store, allowFileFallback: false });
     const baseState = durable.status === 'ok' ? durable.state : { currentVersion: null, pendingVersion: null, versions: [], manualPauses: { campuses: {}, offerings: {} }, capPauses: { campuses: {}, offerings: {} } };
+    const mergedVersions = Array.isArray(baseState.versions) ? baseState.versions.slice() : [];
+    const replacementIndex = mergedVersions.findIndex((entry) => entry && entry.id === imported.id);
+    if (replacementIndex >= 0) {
+      mergedVersions[replacementIndex] = imported;
+    } else {
+      mergedVersions.push(imported);
+    }
     const candidate = {
       currentVersion: effectiveNow ? imported.id : (baseState.currentVersion || null),
       pendingVersion: imported.id,
-      versions: Array.isArray(baseState.versions) ? baseState.versions.concat(imported) : [imported],
+      versions: mergedVersions,
       manualPauses: baseState.manualPauses || { campuses: {}, offerings: {} },
       capPauses: baseState.capPauses || { campuses: {}, offerings: {} }
     };

@@ -254,28 +254,53 @@ async function writeRuntimeAvailability(runtimeState, options) {
 function buildPublicationCandidate(currentState, desiredState) {
   const current = normalizeState(currentState || EMPTY_STATE);
   const desired = normalizeState(desiredState || EMPTY_STATE);
-  const mergedVersions = [];
-  const seen = new Set();
-  [current.versions, desired.versions].forEach(function (versions) {
-    (Array.isArray(versions) ? versions : []).forEach(function (version) {
-      if (!version || !version.id || seen.has(version.id)) return;
-      seen.add(version.id);
-      mergedVersions.push({
-        id: version.id,
-        effectiveDate: version.effectiveDate || null,
-        expiresAt: version.expiresAt || null,
-        campuses: Object.assign({}, version.campuses || {}),
-        offerings: Object.assign({}, version.offerings || {})
-      });
-    });
+  const mergedVersions = (Array.isArray(current.versions) ? current.versions.slice() : []).map(function (version) {
+    return {
+      id: version.id,
+      effectiveDate: version.effectiveDate || null,
+      expiresAt: version.expiresAt || null,
+      campuses: Object.assign({}, version.campuses || {}),
+      offerings: Object.assign({}, version.offerings || {})
+    };
   });
+  const seen = new Map();
+  mergedVersions.forEach(function (version, index) {
+    if (version && version.id) seen.set(version.id, index);
+  });
+
+  (Array.isArray(desired.versions) ? desired.versions : []).forEach(function (version) {
+    if (!version || !version.id) return;
+    const replacementIndex = seen.get(version.id);
+    const normalized = {
+      id: version.id,
+      effectiveDate: version.effectiveDate || null,
+      expiresAt: version.expiresAt || null,
+      campuses: Object.assign({}, version.campuses || {}),
+      offerings: Object.assign({}, version.offerings || {})
+    };
+    if (replacementIndex !== undefined) {
+      mergedVersions[replacementIndex] = normalized;
+      return;
+    }
+    seen.set(version.id, mergedVersions.length);
+    mergedVersions.push(normalized);
+  });
+
+  const nextManualPauses = {
+    campuses: Object.assign({}, current.manualPauses && current.manualPauses.campuses ? current.manualPauses.campuses : {}),
+    offerings: Object.assign({}, current.manualPauses && current.manualPauses.offerings ? current.manualPauses.offerings : {})
+  };
+  const nextCapPauses = {
+    campuses: Object.assign({}, current.capPauses && current.capPauses.campuses ? current.capPauses.campuses : {}),
+    offerings: Object.assign({}, current.capPauses && current.capPauses.offerings ? current.capPauses.offerings : {})
+  };
 
   return normalizeState({
     currentVersion: desired.currentVersion || current.currentVersion || null,
     pendingVersion: desired.pendingVersion || current.pendingVersion || null,
     versions: mergedVersions,
-    manualPauses: Object.assign({}, current.manualPauses || { campuses: {}, offerings: {} }),
-    capPauses: Object.assign({}, current.capPauses || { campuses: {}, offerings: {} })
+    manualPauses: nextManualPauses,
+    capPauses: nextCapPauses
   });
 }
 

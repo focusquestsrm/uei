@@ -184,7 +184,7 @@ test('google places autocomplete fills structured address fields and leaves edit
   };
 
   global.window = {
-    UEI_RUNTIME_CONFIG: { googleMapsBrowserKey: 'AIzaabcdefghijklmnopqrstuvwxyz1234567890' },
+    UEI_RUNTIME_CONFIG: { googleMapsBrowserKey: 'mock-google-browser-key-for-tests-only' },
     google: {
       maps: {
         places: {

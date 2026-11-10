@@ -8,6 +8,11 @@ const config = require('../config/campus-programs.json');
 const runtimeState = require('../config/availability.json');
 
 const root = path.join(__dirname, '..');
+const googleMapsBrowserKey = String(process.env.GOOGLE_MAPS_BROWSER_KEY || '').trim();
+if (googleMapsBrowserKey && !/^AIza[0-9A-Za-z_-]{20,}$/.test(googleMapsBrowserKey)) {
+  throw new Error('GOOGLE_MAPS_BROWSER_KEY has an invalid format.');
+}
+
 const errors = catalog.validateConfig(config);
 if (errors.length) {
   console.error(errors.join('\n'));
@@ -21,12 +26,14 @@ if (!catalog.validatePublic(choices)) {
   process.exit(1);
 }
 
-// Public values only: no secrets, no routing IDs, no campaign code.
+// Public values only: no secrets, no routing IDs, no campaign code. Google Places browser
+// key is intentionally exposed only to the browser so it can load the Autocomplete API.
 const runtime = {
   metaPixelId: '1394019919533755',
   endpoint: '/.netlify/functions/submit-lead',
   availabilityEndpoint: '/.netlify/functions/availability',
   thankYouPath: '/thank-you.html',
+  googleMapsBrowserKey: googleMapsBrowserKey,
   availability: availableState
 };
 

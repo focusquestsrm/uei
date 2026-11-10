@@ -27,6 +27,7 @@ Set under Site configuration → Environment variables. Scope: **Functions** (ru
 | `LEAD_TEST_MODE` | no | `true` sends `lead[test]=true` (accepted, not delivered). Must be exactly `true` or `false`; blank blocks posting and is treated as test. Set `false` only at live launch. | You |
 | `SITE_URL` | no | Production origin, e.g. `https://example.com`. Used for the `Origin` check, `lead[signup_url]`, and `lead[consent_url]` validation. HTTPS required (loopback allowed for local tests). | Production domain |
 | `LEADHOOP_CAMPAIGN_CODE` | **yes** | Server-only `campaign_code` from the LeadHoop posting specs. Never committed. | LeadHoop posting specs, "Campaign Code" |
+| `GOOGLE_MAPS_BROWSER_KEY` | **yes** | Browser key used by Google Places Autocomplete. Must be a valid `AIza...` key that is restricted to the production host(s) and the Places API/Maps JavaScript API. Never committed to source control. | Google Cloud Console |
 
 No authorization token or FPI is required by the UEI spec. Nothing secret is sent to the browser.
 
@@ -47,9 +48,10 @@ No authorization token or FPI is required by the UEI spec. Nothing secret is sen
 | `src/js/function2.js` | `src/js/form.js` (3 steps, campus-dependent programs, real thank-you page) |
 | `src/js/phone.js`, `meta-pixel.js` | same names (UEI Pixel ID, `(AAA) BBB-CCCC` formatting) |
 | `src/index.html`, `styles.css` | rewritten for UEI; no UMA images or Bootstrap CDN |
+| `src/js/google-places.js` | adapted from the UMA implementation to populate the UEI address, city, state, and ZIP fields after a verified Google Places selection while allowing the user to edit the address afterward |
 | South University `submit-lead.js` / `function2.js` @ `2701d70` | `src/js/address.js` (format checks only, no existence claims) |
 
-Intentionally not carried over: Google Places, program availability/cap admin functions, scheduled reset, TrustedForm, `campaign_id`/`meta_event_id` forwarding.
+Not carried over from UMA: program availability/cap admin functions, scheduled reset, TrustedForm, `campaign_id`/`meta_event_id` forwarding.
 
 ## Scheduled monthly availability and cap handling
 

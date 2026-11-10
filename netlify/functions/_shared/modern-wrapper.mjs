@@ -1,12 +1,9 @@
-import { createRequire } from 'module';
 import { getStore } from '@netlify/blobs';
+import campusConfig from './bundled-config/campus-programs.json' with { type: 'json' };
+import catalog from '../../../src/js/catalog.js';
 import idempotency from './submission-idempotency.js';
 import availabilityStore from './runtime-availability.js';
 import handlerModule from './submit-lead-handler.js';
-
-const require = createRequire(import.meta.url);
-const campusConfig = require('../../../config/campus-programs.json');
-const catalog = require('../../../src/js/catalog.js');
 
 idempotency.configureNetlifyStore(getStore);
 availabilityStore.configureNetlifyStore(getStore);

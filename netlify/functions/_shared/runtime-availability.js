@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const STORE_NAME = 'uei-runtime-availability';
-const DEFAULT_PATH = path.join(__dirname, '..', '..', '..', 'config', 'availability.json');
+const DEFAULT_PATH = path.join(__dirname, 'bundled-config', 'availability.json');
 const STORE_KEY = 'runtime-availability';
 const EMPTY_STATE = Object.freeze({
   currentVersion: null,

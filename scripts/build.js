@@ -7,6 +7,11 @@ const availability = require('../src/js/availability');
 const config = require('../config/campus-programs.json');
 const runtimeState = require('../config/availability.json');
 
+const bundledConfigDir = path.join(__dirname, '..', 'netlify', 'functions', '_shared', 'bundled-config');
+fs.mkdirSync(bundledConfigDir, { recursive: true });
+fs.writeFileSync(path.join(bundledConfigDir, 'campus-programs.json'), JSON.stringify(config, null, 2) + '\n', 'utf8');
+fs.writeFileSync(path.join(bundledConfigDir, 'availability.json'), JSON.stringify(runtimeState, null, 2) + '\n', 'utf8');
+
 const root = path.join(__dirname, '..');
 const googleMapsBrowserKey = String(process.env.GOOGLE_MAPS_BROWSER_KEY || '').trim();
 if (googleMapsBrowserKey && !/^AIza[0-9A-Za-z_-]{20,}$/.test(googleMapsBrowserKey)) {

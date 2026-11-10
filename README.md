@@ -19,7 +19,7 @@ commit `2076e82b2ad13fb5874a83a396bcb0a4db250f49`), changed to UEI's campus-depe
 
 ## Netlify environment variables
 
-Set under Site configuration → Environment variables. Scope: **Functions** (runtime) for all four; none are needed at build time.
+Set under Site configuration → Environment variables. The browser key is required at build time because `scripts/build.js` validates and exposes it to the browser runtime; the runtime-only submission settings are used by Netlify Functions.
 
 | Name | Secret | Purpose | Source |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ Set under Site configuration → Environment variables. Scope: **Functions** (ru
 | `LEAD_TEST_MODE` | no | `true` sends `lead[test]=true` (accepted, not delivered). Must be exactly `true` or `false`; blank blocks posting and is treated as test. Set `false` only at live launch. | You |
 | `SITE_URL` | no | Production origin, e.g. `https://example.com`. Used for the `Origin` check, `lead[signup_url]`, and `lead[consent_url]` validation. HTTPS required (loopback allowed for local tests). | Production domain |
 | `LEADHOOP_CAMPAIGN_CODE` | **yes** | Server-only `campaign_code` from the LeadHoop posting specs. Never committed. | LeadHoop posting specs, "Campaign Code" |
-| `GOOGLE_MAPS_BROWSER_KEY` | **yes** | Browser key used by Google Places Autocomplete. Must be a valid `AIza...` key that is restricted to the production host(s) and the Places API/Maps JavaScript API. Never committed to source control. | Google Cloud Console |
+| `GOOGLE_MAPS_BROWSER_KEY` | **yes** | Browser key used by Google Places Autocomplete. Required in **Builds** and **Functions** scopes because the value is validated in `scripts/build.js` and then exposed to the browser runtime. The key must be a valid `AIza...` key restricted to the production host(s) plus the Places API and Maps JavaScript API. Never committed to source control. | Google Cloud Console |
 
 No authorization token or FPI is required by the UEI spec. Nothing secret is sent to the browser.
 

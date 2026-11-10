@@ -152,6 +152,85 @@ test('cap response detection pauses only the matching scope and ignores test lea
   assert.equal(testNoop.changed, false);
 });
 
+test('google places autocomplete fills structured address fields and leaves editing enabled', () => {
+  const previousWindow = global.window;
+  const previousDocument = global.document;
+  const previousEvent = global.Event;
+  global.Event = class FakeEvent {
+    constructor(type, options) {
+      this.type = type;
+      this.bubbles = !!(options && options.bubbles);
+    }
+  };
+
+  const bodyClassList = {
+    add() {},
+    remove() {}
+  };
+  const addresses = {
+    address: { value: '', dataset: {}, listeners: {}, addEventListener(event, callback) { this.listeners[event] = callback; }, dispatchEvent(event) { if (this.listeners[event.type]) this.listeners[event.type](event); } },
+    city: { value: '', dataset: {}, listeners: {}, addEventListener() {}, dispatchEvent() {} },
+    state: { value: '', dataset: {}, listeners: {}, addEventListener() {}, dispatchEvent() {} },
+    zip: { value: '', dataset: {}, listeners: {}, addEventListener() {}, dispatchEvent() {} }
+  };
+
+  global.window = {
+    UEI_RUNTIME_CONFIG: { googleMapsBrowserKey: 'AIzaabcdefghijklmnopqrstuvwxyz1234567890' },
+    google: {
+      maps: {
+        places: {
+          Autocomplete: class {
+            constructor(input) { this.input = input; }
+            addListener(eventName, callback) {
+              this[eventName] = callback;
+              return { remove() {} };
+            }
+            getPlace() {
+              return {
+                address_components: [
+                  { long_name: '123', short_name: '123', types: ['street_number'] },
+                  { long_name: 'Main', short_name: 'Main', types: ['route'] },
+                  { long_name: 'Los Angeles', short_name: 'Los Angeles', types: ['locality'] },
+                  { long_name: 'California', short_name: 'CA', types: ['administrative_area_level_1'] },
+                  { long_name: '90210', short_name: '90210', types: ['postal_code'] }
+                ]
+              };
+            }
+          }
+        }
+      }
+    },
+    __ueiGooglePlacesState: null
+  };
+  global.document = {
+    body: { classList: bodyClassList },
+    head: { appendChild() {} },
+    getElementById(id) { return addresses[id] || null; },
+    createElement() { return { dataset: {}, addEventListener() {}, appendChild() {}, setAttribute() {}, style: {} }; }
+  };
+
+  delete require.cache[require.resolve('../src/js/google-places.js')];
+  require('../src/js/google-places.js');
+
+  const api = global.window.UEI_GOOGLE_PLACES;
+  assert.ok(api && typeof api.initializePlaces === 'function');
+  const autocomplete = api.initializePlaces();
+  api.handlePlaceChanged(autocomplete);
+
+  assert.equal(addresses.address.value, '123 Main');
+  assert.equal(addresses.city.value, 'Los Angeles');
+  assert.equal(addresses.state.value, 'CA');
+  assert.equal(addresses.zip.value, '90210');
+
+  addresses.address.value = '123 Main Apt 4B';
+  if (addresses.address.listeners.input) addresses.address.listeners.input();
+  assert.equal(addresses.address.value, '123 Main Apt 4B');
+
+  global.window = previousWindow;
+  global.document = previousDocument;
+  global.Event = previousEvent;
+});
+
 test('publishRuntimeAvailability preserves durable pauses and retries on conflict', async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uei-runtime-'));
   const storePath = path.join(tempDir, 'runtime.json');

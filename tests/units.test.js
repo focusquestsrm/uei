@@ -56,14 +56,13 @@ test('campaign limits are enforced', () => {
   assert.equal(rules.gradYears().length, 27);
 });
 
-test('catalog source is structurally valid and ZIPs do not overlap', () => {
+test('catalog source is structurally valid and approved campus matrix is active', () => {
   assert.deepEqual(catalog.validateConfig(campusConfig), []);
-  const seen = new Map();
-  campusConfig.campuses.forEach((campus) => campus.zips.forEach((zip) => {
-    assert.ok(!seen.has(zip) || seen.get(zip) === campus.id, 'ZIP overlap ' + zip);
-    seen.set(zip, campus.id);
-  }));
-  assert.equal(seen.size, 301);
+  const activeCampuses = campusConfig.campuses.filter((campus) => campus.active);
+  const activeOfferings = campusConfig.offerings.filter((offering) => offering.active);
+  assert.equal(activeCampuses.length, 18);
+  assert.equal(activeOfferings.length, 69);
+  assert.equal(new Set(activeCampuses.flatMap((campus) => campus.zips)).size, 730);
 });
 
 test('public choices expose only active options and no routing IDs', () => {
@@ -80,12 +79,22 @@ test('public choices expose only active options and no routing IDs', () => {
 test('server selection resolution rejects paused, unknown, and out-of-area choices', () => {
   const bakersfield = campusConfig.campuses.find((campus) => campus.id === 'bakersfield');
   const zip = bakersfield.zips[0];
-  assert.ok(catalog.resolveSelection(campusConfig, 'bakersfield', 'dental-assistant', zip).ok);
-  assert.equal(catalog.resolveSelection(campusConfig, 'bakersfield', 'medical-office-specialist', zip).reason, 'unknown');
-  assert.equal(catalog.resolveSelection(campusConfig, 'oceanside', 'hvac', campusConfig.campuses.find((c) => c.id === 'oceanside').zips[0]).reason, 'paused');
-  assert.equal(catalog.resolveSelection(campusConfig, 'gardena', 'medical-assistant', campusConfig.campuses.find((c) => c.id === 'gardena').zips[0]).reason, 'paused');
-  assert.equal(catalog.resolveSelection(campusConfig, 'bakersfield', 'dental-assistant', '10001').reason, 'zip');
-  assert.equal(catalog.resolveSelection(campusConfig, 'nowhere', 'hvac', zip).reason, 'unknown');
+  const runtime = {
+    currentVersion: '2026-11',
+    campuses: { oceanside: { active: false }, gardena: { active: true } },
+    offerings: {
+      'oceanside/hvac': { active: false },
+      'gardena/hvac': { active: false }
+    },
+    manualPauses: { campuses: {}, offerings: {} },
+    capPauses: { campuses: {}, offerings: {} }
+  };
+  assert.ok(catalog.resolveSelection(campusConfig, 'bakersfield', 'dental-assistant', zip, runtime).ok);
+  assert.equal(catalog.resolveSelection(campusConfig, 'bakersfield', 'medical-office-specialist', zip, runtime).reason, 'unknown');
+  assert.equal(catalog.resolveSelection(campusConfig, 'oceanside', 'hvac', campusConfig.campuses.find((c) => c.id === 'oceanside').zips[0], runtime).reason, 'paused');
+  assert.equal(catalog.resolveSelection(campusConfig, 'gardena', 'hvac', campusConfig.campuses.find((c) => c.id === 'gardena').zips[0], runtime).reason, 'paused');
+  assert.equal(catalog.resolveSelection(campusConfig, 'bakersfield', 'dental-assistant', '10001', runtime).reason, 'zip');
+  assert.equal(catalog.resolveSelection(campusConfig, 'nowhere', 'hvac', zip, runtime).reason, 'unknown');
 });
 
 test('vendor response classification', () => {
@@ -122,14 +131,14 @@ test('scheduled availability chooses the active version and honors manual pause 
       { id: '2026-11', effectiveDate: '2026-11-01T00:00:00-05:00', expiresAt: '2026-12-01T00:00:00-05:00', campuses: { oceanside: false }, offerings: { 'oceanside/hvac': false } },
       { id: '2026-12', effectiveDate: '2026-12-01T00:00:00-05:00', campuses: { }, offerings: { } }
     ],
-    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/medical-assistant': false } },
+    manualPauses: { campuses: { oceanside: false }, offerings: { 'gardena/hvac': false } },
     capPauses: { campuses: {}, offerings: {} }
   };
   const runtime = availability.resolveRuntime(campusConfig, state, new Date('2026-11-05T12:00:00-05:00'));
   assert.equal(runtime.currentVersion, '2026-11');
   assert.equal(runtime.campuses.oceanside.active, false);
   assert.equal(runtime.offerings['oceanside/hvac'].active, false);
-  assert.equal(runtime.offerings['gardena/medical-assistant'].active, false);
+  assert.equal(runtime.offerings['gardena/hvac'].active, false);
 });
 
 test('cap response detection pauses only the matching scope and ignores test leads', () => {

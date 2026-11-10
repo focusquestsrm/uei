@@ -69,7 +69,8 @@ test('submission reads the durable runtime state instead of silently falling bac
   };
   const store = memoryStore();
   await store.setJSON('runtime-availability', state, { consistency: 'strong' });
-  const result = await handleSubmission(event(validBody()), { env: ENV, store, fetch: vendorFetch(SUCCESS), now: OPEN_NOW });
+  const body = validBody({ campus: 'bakersfield', program: 'dental-assistant', zip: '93203' });
+  const result = await handleSubmission(event(body), { env: ENV, store, fetch: vendorFetch(SUCCESS), now: OPEN_NOW });
   const json = JSON.parse(result.body);
   assert.equal(result.statusCode, 400);
   assert.equal(json.outcome, 'validation_error');

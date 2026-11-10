@@ -168,7 +168,7 @@ async function main() {
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), name + ': no horizontal overflow');
     await page.screenshot({ path: path.join(OUT, name + '-landing.png'), fullPage: true });
     const campuses = await page.$$eval('#campus option', (o) => o.map((e) => e.value).filter(Boolean));
-    ok(!campuses.includes('oceanside') && campuses.length === 6, name + ': paused Oceanside absent, 6 campuses offered');
+    ok(!campuses.includes('oceanside') && campuses.length === 18, name + ': paused Oceanside absent, 18 campuses offered');
     await page.selectOption('#campus', 'gardena');
     const gardenaPrograms = await page.$$eval('#program option', (o) => o.map((e) => e.value).filter(Boolean));
     ok(JSON.stringify(gardenaPrograms) === JSON.stringify(['electrician-technician', 'hvac']), name + ': Gardena offers only Electrician and HVAC');
